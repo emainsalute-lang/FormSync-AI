@@ -1,0 +1,10 @@
+﻿services:
+  formsync:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - formsync-data:/app/data
+    restart: unless-stopped
+volumes:
+  formsync-data:

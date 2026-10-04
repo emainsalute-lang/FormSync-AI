@@ -1,0 +1,9 @@
+.page { min-height: 100vh; padding: 24px; background: #101212; color: #f2f5f3; font-family: Arial, Helvetica, sans-serif; }
+.page header, .page footer { max-width: 980px; margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; color: #9aabab; }
+.brand { color: #b7f76b; font-weight: 700; }
+.page section { max-width: 980px; margin: 8vh auto 32px; }
+.eyebrow { color: #b7f76b; font-size: .8rem; letter-spacing: .12em; }
+.page h1 { margin: 8px 0; font-size: clamp(1.8rem, 5vw, 3rem); }
+.page video { display: block; width: 100%; max-height: 75vh; margin: 24px 0 12px; background: #000; border-radius: 12px; }
+.expiry { color: #9aabab; font-size: .9rem; }
+@media (max-width: 600px) { .page { padding: 16px; } .page header, .page footer { flex-direction: column; } }
