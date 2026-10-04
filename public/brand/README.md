@@ -1,0 +1,1 @@
+Source: user-supplied lightning swoosh. Built-in imagegen prompt: Extract the exact solid black flowing lightning swoosh; preserve silhouette, pointed ends and smooth center bend; transparent background, no redesign/text/shadows. PNG size variants packaged with Sharp.

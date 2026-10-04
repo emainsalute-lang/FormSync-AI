@@ -276,7 +276,14 @@ export default function TrainingHub({
     <div className="hub-shell">
       <header className="hub-header">
         <Link href="/" className="wordmark">
-          <Activity size={22} /> FormSync<span>AI</span>
+          <img
+            src="/brand/logo-white.png"
+            alt=""
+            width="52"
+            height="20"
+            className="h-auto w-16"
+          />{" "}
+          FormSync<span>AI</span>
         </Link>
         <Link href="/" className="button-ghost">
           <ArrowLeft size={16} /> Video workspace

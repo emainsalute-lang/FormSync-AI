@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 export const databaseDirectory = path.resolve(
+  /* turbopackIgnore: true */
   process.env.FORMSYNC_DATA_DIR || path.join(process.cwd(), "data"),
 );
 let connection: DatabaseSync | undefined;

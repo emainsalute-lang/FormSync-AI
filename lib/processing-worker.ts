@@ -16,7 +16,7 @@ import {
   withStoreLock,
 } from "./storage";
 import { withMediaLock } from "./media-lock";
-import { objectFile, storeObject } from "./object-store";
+import { objectFile, storeObject, cloudEnabled } from "./object-store";
 import { getMediaOwner, setMediaOwner } from "./storage";
 import { assertCapacity, storagePolicy } from "./storage-policy";
 import { validVideoHeader } from "./validation";
@@ -26,6 +26,7 @@ import { sendDueReminders } from "./push-reminders";
 type Job = { id: string; kind: string; media_id: string; attempts: number };
 async function optimize(id: string) {
   const info = await getMediaInfo(id);
+  if (cloudEnabled()) await storeObject("videos/" + id, id, info.type);
   const thumbnail = objectFile(`thumbnails/${id}.jpg`),
     proxy = objectFile(`optimized/${id}.mp4`);
   await fs.mkdir(path.dirname(thumbnail), { recursive: true });
@@ -98,8 +99,8 @@ async function optimize(id: string) {
 async function optimizeIfPresent(id: string) {
   if (
     !database()
-      .prepare("SELECT id FROM documents WHERE collection='media' AND id=?")
-      .get(id)
+      .prepare("SELECT key FROM objects WHERE key=?")
+      .get("videos/" + id)
   )
     return;
   await optimize(id);
@@ -134,7 +135,7 @@ export async function workerTick() {
       // Durable lease allows a killed worker to be recovered by another process.
       const row = db
         .prepare(
-          "SELECT id,kind,media_id,attempts FROM jobs WHERE (state='queued' AND available_at<=?) OR (state='running' AND lease_until<?) ORDER BY created_at LIMIT 1",
+          "SELECT id,kind,media_id,attempts FROM jobs WHERE (state='queued' AND available_at<=?) OR (state='running' AND lease_until<?) ORDER BY CASE kind WHEN 'ingest' THEN 0 WHEN 'delete' THEN 1 WHEN 'expire' THEN 1 WHEN 'optimize' THEN 2 ELSE 3 END, created_at LIMIT 1",
         )
         .get(now, now) as Job | undefined;
       if (row)
@@ -144,6 +145,12 @@ export async function workerTick() {
       return row;
     });
     if (job) {
+      const heartbeat = setInterval(() => {
+        db.prepare(
+          "UPDATE jobs SET lease_until=? WHERE id=? AND state='running'",
+        ).run(Date.now() + 15 * 60 * 1000, job.id);
+      }, 30000);
+      heartbeat.unref();
       try {
         if (job.kind === "ingest") await ingest(job.media_id);
         else if (job.kind === "optimize")
@@ -156,6 +163,26 @@ export async function workerTick() {
             withStoreLock(async () => {
               if (!(await getVideoSession(job.media_id)))
                 await removeMedia(job.media_id);
+            }),
+          );
+        else if (job.kind === "expire")
+          await withMediaLock(job.media_id, () =>
+            withStoreLock(async () => {
+              const policy = storagePolicy(),
+                row = db
+                  .prepare("SELECT created_at FROM objects WHERE key=?")
+                  .get("videos/" + job.media_id);
+              if (
+                row &&
+                policy.retentionDays > 0 &&
+                Date.now() - Date.parse(String(row.created_at)) >
+                  policy.retentionDays * 86400000
+              ) {
+                await removeMedia(job.media_id);
+                writeDocument("system", "expired:" + job.media_id, {
+                  at: new Date().toISOString(),
+                });
+              }
             }),
           );
         else throw new Error("Unknown processing job");
@@ -185,6 +212,8 @@ export async function workerTick() {
           mediaId: job.media_id,
           attempts: job.attempts + 1,
         });
+      } finally {
+        clearInterval(heartbeat);
       }
     }
     await maintenance();
@@ -224,7 +253,8 @@ async function maintenance() {
     const abandoned =
       !referenced.has(id) &&
       Date.now() - Date.parse(String(row.created_at)) > 86400000;
-    if (expired || abandoned) enqueue("delete", id);
+    if (expired) enqueue("expire", id);
+    else if (abandoned) enqueue("delete", id);
   }
   for (const row of db
     .prepare("SELECT id FROM uploads WHERE state='uploading' AND created_at<?")

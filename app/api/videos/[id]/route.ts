@@ -1,5 +1,6 @@
 import { createReadStream, promises as fs } from "node:fs";
 import { Readable } from "node:stream";
+import { ensureObject } from "@/lib/object-store";
 import { videoPath } from "@/lib/storage";
 import { findMedia } from "@/lib/media-service";
 import { appIdentity, canAccessMedia } from "@/lib/user-scope";
@@ -22,10 +23,11 @@ export async function GET(
       return new Response("Not found", { status: 404 });
     const session = await findMedia(id);
     if (!session) return new Response("Not found", { status: 404 });
-    const file = videoPath(id);
+    const optimized=new URL(request.url).searchParams.get("optimized")==="1";
+    const file = optimized ? await ensureObject(`optimized/${id}.mp4`) : videoPath(id);
     const { size } = await fs.stat(file);
     const headers: Record<string, string> = {
-      "Content-Type": session.type,
+      "Content-Type": optimized ? "video/mp4" : session.type,
       "Accept-Ranges": "bytes",
       "Cache-Control": "private, max-age=3600",
       "X-Content-Type-Options": "nosniff",

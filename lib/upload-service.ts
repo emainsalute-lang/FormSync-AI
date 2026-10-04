@@ -45,6 +45,8 @@ export async function beginUpload(
   ownerId = "local",
 ) {
   if (
+    typeof name !== "string" ||
+    typeof type !== "string" ||
     !name ||
     name.length > 200 ||
     !["video/mp4", "video/webm", "video/quicktime"].includes(type) ||

@@ -167,6 +167,7 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
     const controller = new AbortController();
     preparation.current = controller;
     setPreparing(true);
+    setUploadProgress(null);
     setMedia(null);
     setError("");
     setUploadProgress(null);
@@ -227,7 +228,10 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
         );
       }
     } finally {
-      if (!controller.signal.aborted) setPreparing(false);
+      if (!controller.signal.aborted) {
+        setPreparing(false);
+        setUploadProgress(null);
+      }
     }
   }
   async function cancelUpload() {
@@ -631,7 +635,13 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
     <div className="app-shell">
       <aside className="rail">
         <a href="#workspace" className="brand-mark" aria-label="FormSync home">
-          <Activity size={25} />
+          <img
+            src="/brand/logo-black.png"
+            alt=""
+            className="h-auto w-8"
+            width="32"
+            height="7"
+          />
         </a>
         <div className="rail-nav">
           <a
@@ -663,9 +673,19 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
       <div className="main-shell">
         <header className="topbar">
           <a className="wordmark" href="#workspace">
+            <img
+              src="/brand/logo-white.png"
+              alt=""
+              width="52"
+              height="20"
+              className="mr-3 inline-block h-auto w-16"
+            />
             FormSync<span>AI</span>
           </a>
           <div className="topbar-right">
+            <a href="/storage" className="button-ghost">
+              Storage
+            </a>
             <a href="/training" className="button-ghost">
               Training hub
             </a>

@@ -13,7 +13,9 @@
     "backup": "node scripts/backup.mjs backup",
     "restore": "node scripts/backup.mjs restore",
     "ops:check": "node scripts/production-check.mjs",
-    "security:check": "npm audit --omit=dev"
+    "security:check": "npm audit --omit=dev",
+    "restore:cloud": "node scripts/restore-cloud.mjs",
+    "worker": "node --conditions=react-server --import tsx scripts/worker.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",

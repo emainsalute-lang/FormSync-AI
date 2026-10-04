@@ -67,7 +67,7 @@ npm start
 - `lib/drafts.ts`: ordered IndexedDB writes for one device-local unsaved draft.
 - `lib/upload-client.ts`: chunked upload transfer, offset-based resume, progress, processing polling, and cancellation.
 - `lib/validation.ts`: field, upload and edit validation.
-- `lib/storage.ts`: atomic filesystem session records and cross-process mutation locking.
+- `lib/storage.ts`: SQLite-backed session records, legacy JSON migration and cross-process mutation locking.
 - `lib/media-service.ts`: bounded FFmpeg/FFprobe subprocesses for indexing, decoding and clip rendering. Processes run without a shell and without visible Windows console windows.
 - `lib/session-service.ts`: shared creation/update logic, revision checks and reference-aware video cleanup.
 - `app/api/media`: multipart video preparation and indexing.
@@ -156,7 +156,7 @@ Open **Training hub** from the dashboard, or visit `/training`.
 - **Camera:** record up to two minutes without audio, then prepare the recording in the original video workspace. Requires a supporting browser on localhost or HTTPS and camera permission. Camera tracks stop on closing, finishing, and unmounting.
 - **Install/offline:** production builds register a service worker and provide app icons/manifest. Supported browsers offer Install FormSync. The previously loaded training hub and last refreshed training records can be viewed offline, with an explicit snapshot banner. Writes, video streaming, pose processing and reports need the server. This does not provide offline video editing or background push reminders. Caches are local to the browser origin.
 
-Training data lives in `data/workspace.json`. Writes validate fields, use the existing mutation lock and atomic file replacement, and reject stale revisions. Session deletion removes linked comments and analyses; failures are logged and obsolete records are filtered on hub load. Cached snapshots refresh after successful browser mutations. `/api/health` checks readable session/workspace storage; it is not external uptime monitoring.
+Training data lives in `data/formsync.sqlite`. Writes validate fields, use the existing mutation lock and SQLite transactions, and reject stale revisions. Session deletion removes linked comments and analyses; failures are logged and obsolete records are filtered on hub load. Cached snapshots refresh after successful browser mutations. `/api/health` checks readable session/workspace storage; it is not external uptime monitoring.
 
 The local inference runtime is pinned in `package-lock.json`, with its browser assets included under `public/pose`. See the official [MediaPipe Web guide](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js) and [Next.js PWA guide](https://nextjs.org/docs/app/guides/progressive-web-apps). The browser test uses the official MediaPipe sample image from `https://storage.googleapis.com/mediapipe-assets/pose.jpg` solely as a test fixture.
 
@@ -171,7 +171,7 @@ $env:FORMSYNC_DATA_DIR = '.tools/restored-data'
 npm run restore -- .tools/backups/my-snapshot
 ```
 
-Backups copy saved session records, referenced videos/indices, and training data while holding the session mutation lock. SHA-256 checksums detect corruption. Restoration validates paths/checksums and refuses to overwrite a nonempty directory. Unfinished browser drafts and unrelated staged uploads are excluded. Copy backup folders to independent storage yourself; this is not a scheduled cloud backup service.
+Backups use the SQLite online backup API and copy registered video objects while holding the mutation lock. SHA-256 checksums and SQLite integrity checks detect corruption. Restoration refuses to overwrite a nonempty directory. Scheduled local/cloud snapshots are provided by the Phase 3 worker below. Browser drafts and incomplete uploads are excluded; pending jobs are cancelled during recovery.
 
 A `Dockerfile` and `compose.yaml` provide a persistent Node/FFmpeg deployment, bound to localhost on the host with a named data volume and health checks:
 
@@ -195,6 +195,49 @@ The session form has independent **Session duration (minutes)** and **Session RP
 
 Daily comparisons use the same saved calendar date. Success is weighted by makes/misses, repetitions are summed, and load totals include only sessions with both inputs. The table reports load coverage (for example, 2/3 sessions) so partial reporting is visible. Unreported measurements and days without training are excluded from scatter plots, not converted to zero. Interactive metric/date filters, a bodyweight trend, and the underlying tables provide the comparisons. These displays show associations, not causal conclusions or medical recommendations.
 
-Wellness records persist in `workspace.json` with revision checks and validation of unique dates/IDs. Legacy workspace files default to an empty wellness list; older API clients that omit the new field preserve current wellness data. Session updates that omit duration/RPE preserve previous values, while explicit `null` clears them. Existing browser drafts are migrated with blank defaults for the new fields.
+Wellness records persist in the SQLite workspace document with revision checks and validation of unique dates/IDs. Legacy workspace files default to an empty wellness list; older API clients that omit the new field preserve current wellness data. Session updates that omit duration/RPE preserve previous values, while explicit `null` clears them. Existing browser drafts are migrated with blank defaults for the new fields.
 
 Wellness has its own CSV export. Session CSV exports include minutes, session RPE and computed load; printable reports and JSON/full backups include the new records. Offline cached training data includes wellness, with writes disabled until reconnected. No individual-set logger is introduced by this change: session RPE is its own field and is never inferred from set ratings.
+
+## Phase 3 — Durable storage and recovery
+
+Features 21–30 are implemented with a persistent SQLite database and optional S3-compatible object storage. Open **Storage** in the video workspace or training hub, or visit `/storage`.
+
+- Sessions and training/wellness records migrate once from JSON into `data/formsync.sqlite`. SQLite uses WAL, full synchronous durability and a busy timeout; browser revision checks remain enforced. Existing JSON files are preserved as migration inputs, and are no longer the authoritative records.
+- Browser uploads use 4 MiB chunks with persisted database offsets, disk flushes, offset conflict checks, quota reservations, progress, cancellation and retries. IndexedDB drafts retain the file and upload ID, so reopening a draft resumes the transfer. Interrupted, uncommitted disk tails are truncated before retrying. Incomplete transfers expire after seven days.
+- Upload completion enqueues durable background work. Workers claim jobs with renewable leases; killed workers can be recovered after lease expiry. Failed work retries up to three attempts and can be retried from Storage. Originals are indexed for exact frame analysis; separate JPEG thumbnails and H.264/AAC fast-start MP4 playback copies are generated. Compression uses CRF 25 and at most 1280px width; very small originals may produce a larger optimized copy. Original quality remains available for analysis.
+- Configured S3 buckets receive original videos, thumbnails and playback copies. A persistent local cache is used for FFmpeg and range playback; missing cached objects are downloaded from the bucket. Cloud mode is reported only when a bucket is configured. Existing saved videos are indexed and queued for optimization/cloud synchronization. Failed cloud transfers are visible as failed jobs. No bucket has been provisioned or deployed by this code change.
+- Usage includes original and derived video bytes plus reservations for unfinished uploads. Quotas are enforced when reserving uploads and registering objects. Backups consume additional disk/cloud space and are outside the displayed video quota.
+- Retention defaults to **keep indefinitely**. An explicit nonzero setting deletes originals and derived files older than that many days while retaining session notes/metrics. Unattached staged videos expire after 24 hours. Changing destructive retention requires confirmation in the app. Existing backup copies may retain expired videos until backup rotation removes them.
+- Automated snapshots run every 24 hours by default and retain the latest seven completed snapshots. Settings support disabling/changing the interval and retention count. The server/worker must be running. Each snapshot contains an online database backup and registered video objects, a SHA-256 manifest, and an integrity check. Cloud snapshots upload their completion manifest last; a separate backup bucket is supported. Failed/incomplete snapshots are not listed as successful and may require operator cleanup.
+
+Configure environment variables on the server (never paste credentials into chat):
+
+```dotenv
+FORMSYNC_DATA_DIR=/persistent/formsync-data
+FORMSYNC_S3_BUCKET=formsync-videos
+FORMSYNC_S3_REGION=us-east-1
+# For R2 use region=auto and its S3 endpoint; for MinIO use its endpoint and PATH_STYLE=true.
+# FORMSYNC_S3_ENDPOINT=https://account-id.r2.cloudflarestorage.com
+# FORMSYNC_S3_PATH_STYLE=true
+AWS_ACCESS_KEY_ID=configure-in-your-secret-manager
+AWS_SECRET_ACCESS_KEY=configure-in-your-secret-manager
+# Optional independent backup bucket:
+# FORMSYNC_S3_BACKUP_BUCKET=formsync-backups
+```
+
+Use a private bucket and server credentials scoped to the required object prefixes. The app accesses the bucket server-side, so browser bucket CORS/public access is unnecessary. A role-based AWS credential chain can replace static access keys. Bucket versioning and independent backup storage should be configured by the operator; this app does not turn them on automatically. Keep the database and cache on a persistent volume on one host; this architecture is unsuitable for ephemeral serverless hosts or app replicas with different local volumes.
+
+The worker runs inside the Node app by default. For an independent process on the same persistent volume, set `FORMSYNC_EMBEDDED_WORKER=false` on the app and run `npm run worker` using Node 24 with project dependencies installed. Recovery instructions are downloadable from Storage. To recover a cloud snapshot, stop the app, choose a **new empty** `FORMSYNC_DATA_DIR`, configure the original bucket/endpoint credentials, then run:
+
+```sh
+npm run restore:cloud -- <snapshot-id>
+```
+
+Local recovery remains `npm run restore -- /path/to/data/backups/<snapshot-id>`. Restore checks hashes and database integrity before copying. Recovered assets are marked local until explicitly synchronized to a configured cloud bucket; partial uploads and active jobs are cancelled. Verify session history, wellness records and playback before switching production traffic. Legacy v1 JSON backups remain supported.
+
+Validation includes actual FFmpeg processing, offsets and crash-tail recovery, cancellation, quota rejection, S3 SDK put/get/delete against a local compatible test server, full snapshot restore and corruption rejection. Real AWS/R2/MinIO deployment still requires provider credentials and an integration smoke test. Implementation references: [Node SQLite and online backup](https://nodejs.org/api/sqlite.html), [AWS SDK v3 S3 examples](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html).
+
+## Logo and app icons
+
+The supplied lightning swoosh is used in dashboard/training/storage branding, the browser favicon and installable-app icons. Transparent black and white marks are in `public/brand`; favicon sizes are 32/48px, Apple touch is 180px, and app icons are 192/512px with a separate maskable safe-area version. The extraction prompt and built-in imagegen provenance are recorded in `public/brand/README.md`.

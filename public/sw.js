@@ -1,10 +1,15 @@
-const CACHE = "formsync-offline-v3";
+const CACHE = "formsync-offline-v4";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
       .then((cache) =>
-        cache.addAll(["/offline.html", "/training", "/app-icon.svg"]),
+        cache.addAll([
+          "/offline.html",
+          "/training",
+          "/brand/logo-white.png",
+          "/brand/icon-192.png",
+        ]),
       )
       .then(() => self.skipWaiting()),
   );
@@ -16,7 +21,9 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key.startsWith("formsync-offline-") && key !== CACHE)
+            .filter(
+              (key) => key.startsWith("formsync-offline-") && key !== CACHE,
+            )
             .map((key) => caches.delete(key)),
         ),
       )
@@ -36,6 +43,7 @@ self.addEventListener("fetch", (event) => {
   const asset =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/pose/") ||
+    url.pathname.startsWith("/brand/") ||
     url.pathname.startsWith("/app-icon");
   const page = request.mode === "navigate";
   if (!asset && !page) return;
@@ -50,7 +58,8 @@ self.addEventListener("fetch", (event) => {
       } catch {
         const stored = await cache.match(request);
         if (stored) return stored;
-        if (page) return (await cache.match("/offline.html")) || Response.error();
+        if (page)
+          return (await cache.match("/offline.html")) || Response.error();
         return Response.error();
       }
     })(),
@@ -74,12 +83,20 @@ self.addEventListener("push", (event) => {
 });
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || "/training", self.location.origin);
+  const target = new URL(
+    event.notification.data?.url || "/training",
+    self.location.origin,
+  );
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      const existing = clients.find((client) => new URL(client.url).origin === target.origin);
-      if (existing) return existing.navigate(target.href).then(() => existing.focus());
-      return self.clients.openWindow(target.href);
-    }),
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        const existing = clients.find(
+          (client) => new URL(client.url).origin === target.origin,
+        );
+        if (existing)
+          return existing.navigate(target.href).then(() => existing.focus());
+        return self.clients.openWindow(target.href);
+      }),
   );
 });

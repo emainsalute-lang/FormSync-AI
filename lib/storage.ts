@@ -10,6 +10,7 @@ import {
 } from "./database";
 import type { Session } from "./model";
 import { isOwnerVisible } from "./owner-scope";
+import { randomUUID } from "node:crypto";
 export const DATA_DIR = path.resolve(
   /* turbopackIgnore: true */ process.env.FORMSYNC_DATA_DIR ||
     path.join(process.cwd(), "data"),
@@ -77,6 +78,7 @@ export async function listSessions(
   allowedOwnerIds?: string[],
 ): Promise<Session[]> {
   await migrateRecords();
+  await migrateVideoIndex();
   const sessions = allDocuments<Session>("sessions");
   const visible =
     ownerId === undefined
@@ -88,6 +90,73 @@ export async function listSessions(
     (a, b) =>
       b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt),
   );
+}
+let mediaMigration: Promise<void> | undefined;
+async function migrateVideoIndex() {
+  return (mediaMigration ||= (async () => {
+    if (readDocument("system", "media-index-migrated")) return;
+    const records = allDocuments<Session>("sessions");
+    const entries: {
+      id: string;
+      bytes: number;
+      at: string;
+      info: unknown;
+      ownerId: string;
+    }[] = [];
+    for (const record of records) {
+      if (readDocument("system", "expired:" + record.videoId)) continue;
+      try {
+        const stat = await fs.stat(videoPath(record.videoId));
+        let info: unknown = null;
+        try {
+          info = JSON.parse(
+            await fs.readFile(
+              path.join(DATA_DIR, "metadata", record.videoId + ".json"),
+              "utf8",
+            ),
+          );
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+        }
+        entries.push({
+          id: record.videoId,
+          bytes: stat.size,
+          at: record.createdAt,
+          info,
+          ownerId: record.ownerId || "local",
+        });
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+      }
+    }
+    transaction(() => {
+      if (readDocument("system", "media-index-migrated")) return;
+      for (const entry of entries) {
+        database()
+          .prepare("INSERT OR IGNORE INTO objects VALUES(?,?,?,?,0)")
+          .run("videos/" + entry.id, entry.id, entry.bytes, entry.at);
+        setMediaOwner(entry.id, entry.ownerId);
+        if (entry.info && !readDocument("media", entry.id))
+          writeDocument("media", entry.id, entry.info);
+        if (
+          !database()
+            .prepare("SELECT id FROM jobs WHERE kind='optimize' AND media_id=?")
+            .get(entry.id)
+        )
+          database()
+            .prepare(
+              "INSERT INTO jobs(id,kind,media_id,created_at) VALUES(?,'optimize',?,?)",
+            )
+            .run(randomUUID(), entry.id, new Date().toISOString());
+      }
+      writeDocument("system", "media-index-migrated", {
+        at: new Date().toISOString(),
+      });
+    });
+  })().catch((e) => {
+    mediaMigration = undefined;
+    throw e;
+  }));
 }
 export async function getVideoSession(
   id: string,
