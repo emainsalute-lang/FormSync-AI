@@ -1,4 +1,4 @@
-const CACHE = "formsync-offline-v4";
+const CACHE = "formsync-offline-v5";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -7,7 +7,7 @@ self.addEventListener("install", (event) => {
         cache.addAll([
           "/offline.html",
           "/training",
-          "/brand/logo-white.png",
+          "/brand/logo-black.png",
           "/brand/icon-192.png",
         ]),
       )

@@ -277,7 +277,7 @@ export default function TrainingHub({
       <header className="hub-header">
         <Link href="/" className="wordmark">
           <img
-            src="/brand/logo-white.png"
+            src="/brand/logo-black.png"
             alt=""
             width="52"
             height="20"
@@ -452,7 +452,7 @@ export default function TrainingHub({
                                 y={190 - (d.reps / maxReps) * 160}
                                 width={Math.max(3, w - 8)}
                                 height={(d.reps / maxReps) * 160}
-                                fill="#b7f76b"
+                                fill="#25753c"
                                 rx="3"
                               >
                                 <title>
@@ -464,14 +464,14 @@ export default function TrainingHub({
                                   cx={x + (w - 8) / 2}
                                   cy={190 - d.rate * 1.6}
                                   r="5"
-                                  fill="#55d8f5"
+                                  fill="#08758a"
                                 >
                                   <title>
                                     {d.date}: {d.rate}% success
                                   </title>
                                 </circle>
                               )}
-                              <text x={x} y="211" fontSize="10" fill="#9aabab">
+                              <text x={x} y="211" fontSize="10" fill="#53665c">
                                 {d.date.slice(5)}
                               </text>
                             </g>

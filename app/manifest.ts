@@ -6,8 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Sports video review and practice tracking",
     start_url: "/training",
     display: "standalone",
-    background_color: "#101212",
-    theme_color: "#101212",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
     icons: [
       {
         src: "/brand/icon-512.png",

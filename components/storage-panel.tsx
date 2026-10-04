@@ -91,7 +91,7 @@ export default function StoragePanel() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <a className="wordmark flex items-center gap-3" href="/">
           <img
-            src="/brand/logo-white.png"
+            src="/brand/logo-black.png"
             alt=""
             width="52"
             height="20"
@@ -111,19 +111,19 @@ export default function StoragePanel() {
       <div>
         <div className="eyebrow">YOUR VIDEO LIBRARY</div>
         <h1 className="text-3xl font-semibold">Storage & recovery</h1>
-        <p className="mt-2 text-zinc-400">
+        <p className="mt-2 text-slate-600">
           Manage space, keep your clips, and protect your training history.
         </p>
       </div>
       {error && (
-        <p role="alert" className="rounded-xl bg-red-950 p-4 text-red-200">
+        <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">
           {error}
         </p>
       )}
       {notice && (
         <p
           role="status"
-          className="rounded-xl bg-emerald-950 p-4 text-emerald-200"
+          className="rounded-xl bg-emerald-50 p-4 text-emerald-800"
         >
           {notice}
         </p>
@@ -135,7 +135,7 @@ export default function StoragePanel() {
           <section className="panel space-y-3 p-5">
             <div className="flex justify-between">
               <h2 className="text-lg font-semibold">Storage usage</h2>
-              <span className="text-sm text-zinc-400">
+              <span className="text-sm text-slate-600">
                 {data.provider} · {data.database}
               </span>
             </div>
@@ -148,10 +148,10 @@ export default function StoragePanel() {
               aria-label="Storage quota usage"
               max={data.usage.quotaBytes}
               value={data.usage.usedBytes + data.usage.reservedBytes}
-              className="h-3 w-full accent-emerald-400"
+              className="h-3 w-full accent-emerald-700"
             />
             {data.provider === "Local storage" && (
-              <p className="text-sm text-amber-300">
+              <p className="text-sm text-amber-800">
                 Cloud storage is ready to configure. Clips currently use this
                 server’s persistent disk.
               </p>
@@ -181,7 +181,7 @@ export default function StoragePanel() {
                 <label className="block">
                   Quota (GB)
                   <input
-                    className="mt-1 w-full rounded-lg bg-zinc-900 p-3"
+                    className="mt-1 w-full rounded-lg bg-slate-50 p-3"
                     type="number"
                     min="0.1"
                     max="1024"
@@ -200,7 +200,7 @@ export default function StoragePanel() {
                 <label className="block">
                   Video retention (days)
                   <input
-                    className="mt-1 w-full rounded-lg bg-zinc-900 p-3"
+                    className="mt-1 w-full rounded-lg bg-slate-50 p-3"
                     type="number"
                     min="0"
                     max="3650"
@@ -212,7 +212,7 @@ export default function StoragePanel() {
                       })
                     }
                   />
-                  <small className="text-zinc-400">
+                  <small className="text-slate-600">
                     0 keeps saved videos indefinitely. Expiration removes video
                     files; notes and metrics remain. Unattached clips expire
                     after 24 hours.
@@ -221,7 +221,7 @@ export default function StoragePanel() {
                 <label className="block">
                   Automatic backup interval (hours)
                   <input
-                    className="mt-1 w-full rounded-lg bg-zinc-900 p-3"
+                    className="mt-1 w-full rounded-lg bg-slate-50 p-3"
                     type="number"
                     min="0"
                     max="168"
@@ -233,14 +233,14 @@ export default function StoragePanel() {
                       })
                     }
                   />
-                  <small className="text-zinc-400">
+                  <small className="text-slate-600">
                     0 disables scheduled backups. The server must be running.
                   </small>
                 </label>
                 <label className="block">
                   Backups to keep
                   <input
-                    className="mt-1 w-full rounded-lg bg-zinc-900 p-3"
+                    className="mt-1 w-full rounded-lg bg-slate-50 p-3"
                     type="number"
                     min="1"
                     max="30"
@@ -275,19 +275,19 @@ export default function StoragePanel() {
                     Back up now
                   </button>
                 </div>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-slate-600">
                   Includes the database, original videos, thumbnails and
                   playback copies. Recovery verifies SHA-256 checksums and
                   database integrity. Restore into an empty data directory with
                   the server stopped.
                 </p>
                 {!data.backups.length ? (
-                  <p className="text-zinc-400">No completed backups yet.</p>
+                  <p className="text-slate-600">No completed backups yet.</p>
                 ) : (
                   data.backups.map((b) => (
-                    <div key={b.id} className="rounded-lg bg-zinc-900 p-3">
+                    <div key={b.id} className="rounded-lg bg-slate-50 p-3">
                       <p>{new Date(b.createdAt).toLocaleString()}</p>
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-slate-600">
                         {b.remote ? "Cloud + local" : "Local"} · {b.fileCount}{" "}
                         files
                       </p>
@@ -297,7 +297,7 @@ export default function StoragePanel() {
                 )}
                 <a
                   href="/api/storage/recovery"
-                  className="text-sm text-emerald-300"
+                  className="text-sm text-emerald-700"
                   download
                 >
                   Download recovery instructions
@@ -311,11 +311,11 @@ export default function StoragePanel() {
               {data.uploads.map((u) => (
                 <div
                   key={u.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-zinc-900 p-3"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 p-3"
                 >
                   <div>
                     <p>{u.name}</p>
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-slate-600">
                       {u.state} · {Math.round((u.offset / u.size) * 100)}%
                       {u.error && ` · ${u.error}`}
                     </p>
@@ -353,7 +353,7 @@ export default function StoragePanel() {
                 return (
                   <article
                     key={v.id}
-                    className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900"
+                    className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
                   >
                     {thumbnail ? (
                       <img
@@ -362,7 +362,7 @@ export default function StoragePanel() {
                         className="aspect-video w-full object-cover"
                       />
                     ) : (
-                      <div className="flex aspect-video items-center justify-center text-zinc-500">
+                      <div className="flex aspect-video items-center justify-center text-slate-500">
                         Preparing thumbnail
                       </div>
                     )}
@@ -370,19 +370,19 @@ export default function StoragePanel() {
                       <h3 className="truncate font-medium" title={v.name}>
                         {v.name}
                       </h3>
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-slate-600">
                         {Math.round(v.duration)}s ·{" "}
                         {bytes(v.objects.reduce((n, o) => n + o.bytes, 0))} ·{" "}
                         {v.sessions} linked sessions
                       </p>
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-slate-600">
                         {v.objects.length && v.objects.every((o) => o.remote)
                           ? "Cloud stored"
                           : "Server stored"}
                       </p>
                       {optimized && (
                         <a
-                          className="inline-block text-sm text-emerald-300"
+                          className="inline-block text-sm text-emerald-700"
                           href={`/api/videos/${v.id}/optimized`}
                           target="_blank"
                           rel="noreferrer"
@@ -411,7 +411,7 @@ export default function StoragePanel() {
               })}
             </div>
             {!data.videos.length && (
-              <p className="text-zinc-400">
+              <p className="text-slate-600">
                 Your uploaded clips will appear here.
               </p>
             )}
@@ -421,14 +421,14 @@ export default function StoragePanel() {
             {data.jobs.map((j) => (
               <div
                 key={j.id}
-                className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 py-3"
+                className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 py-3"
               >
                 <div>
                   <p className="capitalize">
                     {j.kind} · {j.state}
                   </p>
                   {j.error && (
-                    <p className="text-sm text-amber-300">{j.error}</p>
+                    <p className="text-sm text-amber-800">{j.error}</p>
                   )}
                 </div>
                 {j.state === "failed" && (
@@ -448,7 +448,7 @@ export default function StoragePanel() {
               </div>
             ))}
             {!data.jobs.length && (
-              <p className="text-zinc-400">No processing jobs yet.</p>
+              <p className="text-slate-600">No processing jobs yet.</p>
             )}
           </section>
         </>

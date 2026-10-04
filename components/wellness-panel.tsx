@@ -296,16 +296,16 @@ export default function WellnessPanel({
                 role="img"
                 aria-label="Bodyweight history chart"
               >
-                <text x="12" y="20" fill="#9aabab" fontSize="12">
+                <text x="12" y="20" fill="#53665c" fontSize="12">
                   {maxWeight.toFixed(1)} kg
                 </text>
-                <text x="12" y="210" fill="#9aabab" fontSize="12">
+                <text x="12" y="210" fill="#53665c" fontSize="12">
                   {minWeight.toFixed(1)} kg
                 </text>
                 <line x1="65" y1="220" x2="620" y2="220" stroke="#39413d" />
                 <polyline
                   fill="none"
-                  stroke="#55d8f5"
+                  stroke="#08758a"
                   strokeWidth="2"
                   points={weights
                     .map(
@@ -324,21 +324,21 @@ export default function WellnessPanel({
                         185
                     }
                     r="5"
-                    fill="#b7f76b"
+                    fill="#25753c"
                   >
                     <title>
                       {e.date}: {e.bodyweightKg} kg
                     </title>
                   </circle>
                 ))}
-                <text x="70" y="242" fill="#9aabab" fontSize="11">
+                <text x="70" y="242" fill="#53665c" fontSize="11">
                   {weights[0].date}
                 </text>
                 <text
                   x="620"
                   y="242"
                   textAnchor="end"
-                  fill="#9aabab"
+                  fill="#53665c"
                   fontSize="11"
                 >
                   {weights.at(-1)?.date}
@@ -455,13 +455,13 @@ export default function WellnessPanel({
                     y1={225 - t * 195}
                     x2="605"
                     y2={225 - t * 195}
-                    stroke="#2a2e2e"
+                    stroke="#d5e1d9"
                   />
                   <text
                     x="55"
                     y={229 - t * 195}
                     textAnchor="end"
-                    fill="#9aabab"
+                    fill="#53665c"
                     fontSize="12"
                   >
                     {Math.round(yMax * t * 10) / 10}
@@ -470,7 +470,7 @@ export default function WellnessPanel({
                     x={65 + t * 535}
                     y="244"
                     textAnchor="middle"
-                    fill="#9aabab"
+                    fill="#53665c"
                     fontSize="12"
                   >
                     {Math.round(
@@ -488,8 +488,8 @@ export default function WellnessPanel({
                   }
                   cy={225 - (p.y / yMax) * 195}
                   r="6"
-                  fill="#b7f76b"
-                  stroke="#101212"
+                  fill="#25753c"
+                  stroke="#ffffff"
                 >
                   <title>
                     {p.date}: {p.x} {xMetric.unit}; {p.y} {yMetric.unit}
@@ -500,12 +500,12 @@ export default function WellnessPanel({
                 x="330"
                 y="278"
                 textAnchor="middle"
-                fill="#9aabab"
+                fill="#53665c"
                 fontSize="13"
               >
                 {xMetric.label} ({xMetric.unit})
               </text>
-              <text x="68" y="15" fill="#9aabab" fontSize="12">
+              <text x="68" y="15" fill="#53665c" fontSize="12">
                 {yMetric.label} ({yMetric.unit})
               </text>
             </svg>

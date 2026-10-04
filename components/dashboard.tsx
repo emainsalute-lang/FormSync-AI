@@ -674,7 +674,7 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
         <header className="topbar">
           <a className="wordmark" href="#workspace">
             <img
-              src="/brand/logo-white.png"
+              src="/brand/logo-black.png"
               alt=""
               width="52"
               height="20"

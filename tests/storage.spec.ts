@@ -28,7 +28,7 @@ test("storage dashboard exposes usage, background assets, recovery snapshots and
   await expect(
     page.getByRole("progressbar", { name: "Storage quota usage" }),
   ).toBeVisible();
-  const logo = page.locator('img[src="/brand/logo-white.png"]');
+  const logo = page.locator('img[src="/brand/logo-black.png"]');
   await expect(logo).toBeVisible();
   expect(
     await logo.evaluate(

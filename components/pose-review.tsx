@@ -119,7 +119,7 @@ export default function PoseReview({
     const ctx = c.getContext("2d")!;
     ctx.clearRect(0, 0, c.width, c.height);
     if (!visible) return;
-    ctx.strokeStyle = "#b7f76b";
+    ctx.strokeStyle = "#25753c";
     ctx.lineWidth = Math.max(2, c.width / 350);
     for (const [a, b] of CONNECTIONS) {
       const p = visible.landmarks[a],
@@ -130,7 +130,7 @@ export default function PoseReview({
       ctx.lineTo(q.x * c.width, q.y * c.height);
       ctx.stroke();
     }
-    ctx.fillStyle = "#55d8f5";
+    ctx.fillStyle = "#08758a";
     for (const p of visible.landmarks) {
       if (p.visibility < 0.6) continue;
       ctx.beginPath();
@@ -890,7 +890,7 @@ export default function PoseReview({
                   y={180 - upper}
                   width="600"
                   height={upper - lower}
-                  fill="#b7f76b"
+                  fill="#25753c"
                   opacity=".08"
                 />
                 {series.map((s, i) => (
@@ -899,7 +899,7 @@ export default function PoseReview({
                     cx={(s.time / (media?.duration || 1)) * 580 + 10}
                     cy={180 - s.angle}
                     r="3"
-                    fill="#55d8f5"
+                    fill="#08758a"
                   >
                     <title>
                       {s.time.toFixed(2)}s: {Math.round(s.angle)}°
