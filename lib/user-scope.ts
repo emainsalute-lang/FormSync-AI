@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "./supabase/server";
 import { supabaseConfigured } from "./supabase/config";
 import { getMediaOwner, getVideoSession } from "./storage";
 import { isOwnerVisible } from "./owner-scope";
+import { cloudStorageEnabled } from "./cloud-config";
+import { cloudMedia } from "./cloud-store";
 
 export type AppIdentity = {
   userId: string;
@@ -51,6 +53,15 @@ export function canAccessOwner(identity: AppIdentity, ownerId?: string) {
 }
 
 export async function canAccessMedia(identity: AppIdentity, mediaId: string) {
+  if (cloudStorageEnabled()) {
+    try {
+      const media = await cloudMedia(mediaId);
+      return canAccessOwner(identity, media.owner_id);
+    } catch (error) {
+      if ((error as { status?: number }).status === 404) return false;
+      throw error;
+    }
+  }
   const session = await getVideoSession(
     mediaId,
     identity.userId,

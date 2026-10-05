@@ -499,6 +499,12 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
       setError("Upload a clip before saving your session.");
       return;
     }
+    if (!videoId) {
+      setError(
+        "Finish video preparation before saving. Retry video preparation to continue.",
+      );
+      return;
+    }
     if (!form.name.trim()) {
       setError("Enter a drill name.");
       return;
@@ -1030,7 +1036,9 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
                   </fieldset>
                   <button
                     className="button-primary save-button"
-                    disabled={saving || preparing || !src || !draftReady}
+                    disabled={
+                      saving || preparing || !videoId || !src || !draftReady
+                    }
                     type="submit"
                   >
                     {saving ? (

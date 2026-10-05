@@ -1,4 +1,5 @@
 import { database } from "./database";
+import { cloudStorageEnabled } from "./cloud-config";
 
 export type PlanName = "free" | "pro" | "team";
 const limits: Record<
@@ -64,6 +65,19 @@ export function assertWorkspacePlanCapacity(
   ownerId: string,
   data: { analyses: unknown[]; workouts: unknown[] },
 ) {
+  if (cloudStorageEnabled()) {
+    if (
+      data.analyses.length > limits.free.analyses ||
+      data.workouts.length > limits.free.workouts
+    )
+      throw Object.assign(
+        new Error(
+          "The cloud workspace allows up to 10 analyses and 10 workout templates.",
+        ),
+        { status: 402 },
+      );
+    return;
+  }
   if (ownerId === "local") return;
   const usage = ownerUsage(ownerId);
   if (data.analyses.length > usage.analysesLimit)

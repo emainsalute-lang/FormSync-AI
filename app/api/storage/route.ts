@@ -13,10 +13,107 @@ import { appIdentity, canAccessOwner } from "@/lib/user-scope";
 import { getMediaOwner } from "@/lib/storage";
 import { ownerUsage } from "@/lib/plan-limits";
 import { adminAuthorized } from "@/lib/admin-auth";
+import { cloudStorageEnabled, VIDEO_BUCKET } from "@/lib/cloud-config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  checkCloud,
+  cloudMedia,
+  mediaObject,
+  type CloudMedia,
+} from "@/lib/cloud-store";
+import { processCloudUpload } from "@/lib/cloud-processing";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function GET(request: Request) {
   try {
+    if (cloudStorageEnabled()) {
+      const identity = await appIdentity();
+      const client = await createSupabaseServerClient();
+      const { data, error } = await client.from("formsync_media").select("*");
+      checkCloud(error);
+      const rows = (data || []) as CloudMedia[];
+      const sessions = await listSessions(
+        identity.userId,
+        identity.accessibleOwnerIds,
+      );
+      const policy = {
+        quotaBytes: 2 * 1024 ** 3,
+        retentionDays: 0,
+        backupHours: 0,
+        backupKeep: 7,
+      };
+      return NextResponse.json(
+        {
+          provider: "Supabase Storage",
+          database: "PostgreSQL",
+          canManage: false,
+          canDelete: identity.role !== "coach",
+          policy,
+          usage: {
+            usedBytes: rows
+              .filter((row) => row.state === "ready")
+              .reduce(
+                (sum, row) => sum + row.size + (row.playback_size || 0),
+                0,
+              ),
+            reservedBytes: rows
+              .filter((row) => ["uploading", "processing"].includes(row.state))
+              .reduce((sum, row) => sum + row.size, 0),
+            quotaBytes: policy.quotaBytes,
+          },
+          videos: rows
+            .filter((row) => row.state === "ready")
+            .map((row) => ({
+              id: row.id,
+              name: row.name,
+              duration: row.info?.duration || 0,
+              sessions: sessions.filter((s) => s.videoId === row.id).length,
+              objects: [
+                {
+                  key: mediaObject(
+                    row,
+                    row.has_original === false ? "playback.mp4" : "original",
+                  ),
+                  bytes: row.size,
+                  remote: 1,
+                  created_at: row.created_at,
+                },
+                ...(row.playback_size
+                  ? [
+                      {
+                        key: mediaObject(row),
+                        bytes: row.playback_size,
+                        remote: 1,
+                        created_at: row.created_at,
+                      },
+                    ]
+                  : []),
+              ],
+            })),
+          jobs: rows
+            .filter((row) => row.state === "failed")
+            .map((row) => ({
+              id: row.id,
+              kind: "ingest",
+              state: "failed",
+              attempts: 1,
+              error: row.error,
+              created_at: row.created_at,
+            })),
+          uploads: rows
+            .filter((row) =>
+              ["uploading", "processing", "failed"].includes(row.state),
+            )
+            .map((row) => ({
+              ...row,
+              offset: row.state === "uploading" ? 0 : row.size,
+            })),
+          backups: [],
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
     const identity = await appIdentity(),
       canManage = identity.role === "local" || adminAuthorized(request);
     const sessions = await listSessions(
@@ -137,6 +234,50 @@ export async function POST(request: Request) {
         { error: "Coach access is read-only" },
         { status: 403 },
       );
+    if (cloudStorageEnabled()) {
+      const row = await cloudMedia(body.id);
+      if (row.owner_id !== identity.userId) throw new Error("Video not found.");
+      if (body.action === "retry") {
+        const processed = await processCloudUpload(row.id);
+        if (processed.state !== "ready")
+          throw new Error(
+            processed.error || "Video processing has not finished.",
+          );
+      } else if (body.action === "delete") {
+        const client = await createSupabaseServerClient();
+        const linked = await client
+          .from("formsync_sessions")
+          .select("id")
+          .eq("media_id", row.id)
+          .limit(1);
+        checkCloud(linked.error);
+        if (linked.data?.length)
+          throw new Error("Delete linked sessions before deleting this video.");
+        // The session trigger refuses new references once deletion begins.
+        checkCloud(
+          (
+            await client
+              .from("formsync_media")
+              .update({ state: "cancelled" })
+              .eq("id", row.id)
+          ).error,
+        );
+        checkCloud(
+          (
+            await client.storage
+              .from(VIDEO_BUCKET)
+              .remove([mediaObject(row, "original"), mediaObject(row)])
+          ).error,
+        );
+        checkCloud(
+          (await client.from("formsync_media").delete().eq("id", row.id)).error,
+        );
+      } else
+        throw new Error(
+          "Manage cloud backups and storage settings in Supabase.",
+        );
+      return NextResponse.json({ ok: true });
+    }
     if (["policy", "backup"].includes(body.action) && !canManage)
       return NextResponse.json(
         {

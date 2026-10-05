@@ -10,8 +10,19 @@ import { originAllowed } from "@/lib/session-service";
 import { validId, getMediaInfo } from "@/lib/media-service";
 import { appIdentity } from "@/lib/user-scope";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { workerTick } from "@/lib/processing-worker";
+import { cloudStorageEnabled, VIDEO_BUCKET } from "@/lib/cloud-config";
+import {
+  cloudMedia,
+  cloudUploadStatus,
+  checkCloud,
+  mediaObject,
+} from "@/lib/cloud-store";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { processCloudUpload } from "@/lib/cloud-processing";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 type Context = { params: Promise<{ id: string }> };
 async function perform(request: Request, context: Context, action: string) {
   const { id } = await context.params;
@@ -29,6 +40,53 @@ async function perform(request: Request, context: Context, action: string) {
         { error: "Coaches cannot access athlete uploads." },
         { status: 403 },
       );
+    if (cloudStorageEnabled()) {
+      let row = await cloudMedia(id);
+      if (row.owner_id !== identity.userId)
+        return NextResponse.json(
+          { error: "Upload not found" },
+          { status: 404 },
+        );
+      if (action === "patch")
+        return NextResponse.json(
+          { error: "Upload chunks directly to Supabase." },
+          { status: 400 },
+        );
+      if (action === "delete") {
+        if (!["uploading", "cancelled"].includes(row.state))
+          return NextResponse.json(
+            { error: "Processing has started. Remove the video from Storage." },
+            { status: 409 },
+          );
+        const client = await createSupabaseServerClient();
+        const cancelled = await client
+          .from("formsync_media")
+          .update({ state: "cancelled" })
+          .eq("id", id)
+          .in("state", ["uploading", "cancelled"])
+          .select("id")
+          .maybeSingle();
+        checkCloud(cancelled.error);
+        if (!cancelled.data)
+          return NextResponse.json(
+            { error: "Processing has started. Remove the video from Storage." },
+            { status: 409 },
+          );
+        checkCloud(
+          (
+            await client.storage
+              .from(VIDEO_BUCKET)
+              .remove([mediaObject(row, "original")])
+          ).error,
+        );
+        return new Response(null, { status: 204 });
+      }
+      if (action === "post" || row.state === "processing")
+        row = await processCloudUpload(id);
+      return NextResponse.json(await cloudUploadStatus(row), {
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
     const existing = uploadRecord(id);
     if (!existing || existing.owner_id !== identity.userId)
       return NextResponse.json({ error: "Upload not found" }, { status: 404 });
@@ -71,7 +129,15 @@ async function perform(request: Request, context: Context, action: string) {
         await appendChunk(id, Number(rawOffset), Buffer.concat(chunks)),
       );
     }
-    const upload = action === "post" ? await completeUpload(id) : existing;
+    let upload = action === "post" ? await completeUpload(id) : existing;
+    if (
+      ["queued", "processing"].includes(upload.state) &&
+      process.env.FORMSYNC_EMBEDDED_WORKER !== "false"
+    ) {
+      // Keep processing within the request lifetime on hosts that suspend timers.
+      await workerTick(id);
+      upload = uploadRecord(id)!;
+    }
     if (!upload)
       return NextResponse.json({ error: "Upload not found" }, { status: 404 });
     return NextResponse.json(

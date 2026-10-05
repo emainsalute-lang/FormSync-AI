@@ -133,7 +133,21 @@ async function ingest(id: string) {
   await fs.unlink(uploadFile(id)).catch(() => {});
 }
 let running = false;
-export async function workerTick() {
+let activeTick: Promise<void> | null = null;
+export async function workerTick(uploadId?: string) {
+  if (activeTick) {
+    await activeTick;
+    if (!uploadId) return;
+  }
+  const tick = runWorkerTick(uploadId);
+  activeTick = tick;
+  try {
+    await tick;
+  } finally {
+    if (activeTick === tick) activeTick = null;
+  }
+}
+async function runWorkerTick(uploadId?: string) {
   if (running) return;
   running = true;
   try {
@@ -141,11 +155,17 @@ export async function workerTick() {
       db = database();
     const job = transaction(() => {
       // Durable lease allows a killed worker to be recovered by another process.
-      const row = db
-        .prepare(
-          "SELECT id,kind,media_id,attempts FROM jobs WHERE (state='queued' AND available_at<=?) OR (state='running' AND lease_until<?) ORDER BY CASE kind WHEN 'ingest' THEN 0 WHEN 'delete' THEN 1 WHEN 'expire' THEN 1 WHEN 'optimize' THEN 2 ELSE 3 END, created_at LIMIT 1",
-        )
-        .get(now, now) as Job | undefined;
+      const row = uploadId
+        ? (db
+            .prepare(
+              "SELECT id,kind,media_id,attempts FROM jobs WHERE kind='ingest' AND media_id=? AND ((state='queued' AND available_at<=?) OR (state='running' AND lease_until<?)) LIMIT 1",
+            )
+            .get(uploadId, now, now) as Job | undefined)
+        : (db
+            .prepare(
+              "SELECT id,kind,media_id,attempts FROM jobs WHERE (state='queued' AND available_at<=?) OR (state='running' AND lease_until<?) ORDER BY CASE kind WHEN 'ingest' THEN 0 WHEN 'delete' THEN 1 WHEN 'expire' THEN 1 WHEN 'optimize' THEN 2 ELSE 3 END, created_at LIMIT 1",
+            )
+            .get(now, now) as Job | undefined);
       if (row)
         db.prepare(
           "UPDATE jobs SET state='running',attempts=attempts+1,lease_until=? WHERE id=?",
@@ -224,7 +244,7 @@ export async function workerTick() {
         clearInterval(heartbeat);
       }
     }
-    await maintenance();
+    if (!uploadId) await maintenance();
   } finally {
     running = false;
   }

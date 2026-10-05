@@ -4,6 +4,8 @@ import { ensureObject } from "@/lib/object-store";
 import { videoPath } from "@/lib/storage";
 import { findMedia } from "@/lib/media-service";
 import { appIdentity, canAccessMedia } from "@/lib/user-scope";
+import { cloudStorageEnabled } from "@/lib/cloud-config";
+import { cloudVideoUrl } from "@/lib/cloud-store";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(
@@ -21,9 +23,18 @@ export async function GET(
     const identity = await appIdentity();
     if (!(await canAccessMedia(identity, id)))
       return new Response("Not found", { status: 404 });
+    if (cloudStorageEnabled())
+      return new Response(null, {
+        status: 307,
+        headers: {
+          Location: await cloudVideoUrl(id),
+          "Cache-Control": "private, no-store",
+        },
+      });
     const session = await findMedia(id);
     if (!session) return new Response("Not found", { status: 404 });
     let optimized = new URL(request.url).searchParams.get("optimized") === "1";
+    const requestedOptimized = optimized;
     let file = videoPath(id);
     if (optimized) {
       try {
@@ -37,7 +48,10 @@ export async function GET(
     const headers: Record<string, string> = {
       "Content-Type": optimized ? "video/mp4" : session.type,
       "Accept-Ranges": "bytes",
-      "Cache-Control": "private, max-age=3600",
+      "Cache-Control":
+        requestedOptimized && !optimized
+          ? "private, no-store"
+          : "private, max-age=3600",
       "X-Content-Type-Options": "nosniff",
     };
     let start = 0,

@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { decodeFrame, MediaError } from "@/lib/media-service";
 import { appIdentity, canAccessMedia } from "@/lib/user-scope";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { cloudStorageEnabled } from "@/lib/cloud-config";
+import { cloudFrame } from "@/lib/cloud-processing";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -17,14 +20,19 @@ export async function GET(
   try {
     const id = (await params).id;
     const identity = await appIdentity();
-    if (!consumeRateLimit(`frame:${identity.userId}`, 600, 60 * 1000).allowed)
+    if (
+      !cloudStorageEnabled() &&
+      !consumeRateLimit(`frame:${identity.userId}`, 600, 60 * 1000).allowed
+    )
       return NextResponse.json(
         { error: "Frame request limit reached. Retry shortly." },
         { status: 429 },
       );
     if (!(await canAccessMedia(identity, id)))
       return NextResponse.json({ error: "Video not found." }, { status: 404 });
-    const frame = await decodeFrame(id, Number(value));
+    const frame = cloudStorageEnabled()
+      ? await cloudFrame(id, Number(value))
+      : await decodeFrame(id, Number(value));
     return new Response(new Uint8Array(frame), {
       headers: {
         "Content-Type": "image/png",

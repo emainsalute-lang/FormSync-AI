@@ -14,6 +14,9 @@ export default defineConfig({
     url: "http://127.0.0.1:3001",
     reuseExistingServer: true,
     env: {
+      NEXT_PUBLIC_SUPABASE_URL: "",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      FORMSYNC_STORAGE_BACKEND: "local",
       FORMSYNC_DATA_DIR: process.env.FORMSYNC_DATA_DIR || ".tools/qa-data",
     },
   },

@@ -28,6 +28,8 @@ import { canAccessMedia, type AppIdentity } from "./user-scope";
 import { consumeRateLimit } from "./rate-limit";
 import { recordOperationalEvent, recordProductEvent } from "./operations";
 import { assertSessionCapacity } from "./plan-limits";
+import { cloudStorageEnabled } from "./cloud-config";
+import { writeCloudSession, deleteCloudSession } from "./cloud-sessions";
 export function originAllowed(request: Request) {
   return sameRequestOrigin(
     request.headers.get("origin"),
@@ -59,6 +61,7 @@ export async function writeSessionRequest(
       { error: "Coaches cannot create or edit athlete sessions." },
       { status: 403 },
     );
+  if (cloudStorageEnabled()) return writeCloudSession(request, identity, id);
   if (
     !consumeRateLimit(`session-write:${identity.userId}`, 40, 60 * 60 * 1000)
       .allowed
@@ -256,6 +259,7 @@ export async function deleteSessionRequest(
       { error: "Coaches cannot delete athlete sessions." },
       { status: 403 },
     );
+  if (cloudStorageEnabled()) return deleteCloudSession(request, identity, id);
   if (
     !consumeRateLimit(`session-delete:${identity.userId}`, 30, 60 * 60 * 1000)
       .allowed

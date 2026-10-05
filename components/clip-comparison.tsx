@@ -199,6 +199,7 @@ export default function ClipComparison({
                   key={s?.videoId || i}
                   ref={i === 0 ? left : right}
                   src={s ? `/api/videos/${s.videoId}` : undefined}
+                  crossOrigin="anonymous"
                   style={
                     overlay && i === 1
                       ? { opacity: overlayOpacity, zIndex: 2 }

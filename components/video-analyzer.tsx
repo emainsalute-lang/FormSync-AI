@@ -553,6 +553,12 @@ export default function VideoAnalyzer({
     if (file && !disabled) onUpload(file);
     if (input.current) input.current.value = "";
   };
+  const previewError =
+    error === "Preparing a browser-compatible video preview..."
+      ? preparing
+        ? error
+        : "Video preview is unavailable. Retry video preparation."
+      : error;
   return (
     <section
       className="panel analyzer"
@@ -670,6 +676,7 @@ export default function VideoAnalyzer({
               <video
                 ref={video}
                 src={src}
+                crossOrigin="anonymous"
                 playsInline
                 preload="metadata"
                 onLoadedMetadata={() => {
@@ -1073,9 +1080,19 @@ export default function VideoAnalyzer({
           </button>
         </div>
       )}
-      {error && (
+      {previewError && (
         <p className="error-message" role="alert">
-          {error}
+          {previewError}{" "}
+          {!preparing && (
+            <button
+              type="button"
+              className="text-link"
+              disabled={disabled}
+              onClick={onRetry}
+            >
+              Retry video preparation
+            </button>
+          )}
         </p>
       )}
       <dialog

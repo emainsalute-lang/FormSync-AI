@@ -24,6 +24,9 @@ import {
   type Rotation,
 } from "./media-model";
 import { MAX_VIDEO_BYTES, validVideoHeader } from "./validation";
+import { cloudStorageEnabled } from "./cloud-config";
+import { cloudMedia } from "./cloud-store";
+import { cloudFrame } from "./cloud-processing";
 export class MediaError extends Error {
   constructor(
     message: string,
@@ -39,7 +42,7 @@ export const validId = (id: string) =>
   );
 let active = 0;
 const waiters: Array<() => void> = [];
-async function runBinary(
+export async function runBinary(
   binary: string,
   args: string[],
   limit = 64 * 1024 * 1024,
@@ -146,6 +149,14 @@ export async function removeMedia(id: string) {
 }
 export async function findMedia(id: string): Promise<MediaInfo | null> {
   if (!validId(id)) return null;
+  if (cloudStorageEnabled()) {
+    try {
+      return (await cloudMedia(id)).info;
+    } catch (error) {
+      if ((error as { status?: number }).status === 404) return null;
+      throw error;
+    }
+  }
   try {
     const info =
       readDocument<MediaInfo>("media", id) ||
@@ -308,6 +319,7 @@ export async function importMedia(
   }
 }
 export async function decodeFrame(id: string, index: number): Promise<Buffer> {
+  if (cloudStorageEnabled()) return cloudFrame(id, index);
   const info = await getMediaInfo(id);
   if (!Number.isInteger(index) || index < 0 || index >= info.frames.length)
     throw new MediaError("Frame index is out of range.");

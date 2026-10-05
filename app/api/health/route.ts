@@ -5,6 +5,7 @@ import { cloudEnabled } from "@/lib/object-store";
 import { appIdentity } from "@/lib/user-scope";
 import { timingSafeEqual } from "node:crypto";
 import { database } from "@/lib/database";
+import { cloudStorageEnabled } from "@/lib/cloud-config";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const healthToken = process.env.FORMSYNC_HEALTH_TOKEN;
@@ -16,6 +17,11 @@ export async function GET(request: Request) {
     const right = Buffer.from(supplied);
     if (left.length === right.length && timingSafeEqual(left, right)) {
       try {
+        if (cloudStorageEnabled())
+          return NextResponse.json(
+            { status: "Cloud health checks require an authenticated user." },
+            { status: 401 },
+          );
         database().prepare("SELECT 1").get();
         return NextResponse.json(
           {
@@ -41,9 +47,11 @@ export async function GET(request: Request) {
         status: "ok",
         sessions: sessions.length,
         plans: w.plans.length,
-        storage: cloudEnabled()
-          ? "S3-compatible object storage"
-          : "local filesystem",
+        storage: cloudStorageEnabled()
+          ? "Supabase Storage and PostgreSQL"
+          : cloudEnabled()
+            ? "S3-compatible object storage"
+            : "local filesystem",
       },
       { headers: { "Cache-Control": "no-store" } },
     );

@@ -12,6 +12,7 @@ type UploadRecord = {
   state: UploadState;
   error: string | null;
   media?: MediaInfo | null;
+  cloud?: { token?: string; endpoint: string; bucket: string; object: string };
 };
 export type UploadProgress = {
   uploadId: string;
@@ -57,9 +58,26 @@ function parseUpload(value: unknown): UploadRecord {
     offset: row.offset,
     state: row.state,
     error: row.error,
+    ...(row.cloud ? { cloud: parseCloud(row.cloud) } : {}),
     ...(row.media === undefined || row.media === null
       ? { media: null }
       : { media: parseMedia(row.media) }),
+  };
+}
+function parseCloud(value: unknown): NonNullable<UploadRecord["cloud"]> {
+  const row = object(value);
+  if (
+    typeof row.endpoint !== "string" ||
+    typeof row.bucket !== "string" ||
+    typeof row.object !== "string" ||
+    (row.token !== undefined && typeof row.token !== "string")
+  )
+    throw new Error("Invalid cloud upload configuration.");
+  return {
+    endpoint: row.endpoint,
+    bucket: row.bucket,
+    object: row.object,
+    token: row.token as string | undefined,
   };
 }
 
@@ -122,7 +140,10 @@ function assertMatches(upload: UploadRecord, file: File) {
     throw new Error(
       "This saved upload does not match the selected video. Choose the original file again.",
     );
-  if (upload.state === "failed" || upload.state === "cancelled")
+  if (
+    (upload.state === "failed" && !upload.cloud) ||
+    upload.state === "cancelled"
+  )
     throw new Error(upload.error || "This upload can no longer be resumed.");
 }
 
@@ -175,6 +196,51 @@ export async function uploadVideo(
     upload = parseUpload(body);
   }
   assertMatches(upload, file);
+  if (upload.cloud) {
+    if (upload.state === "uploading") {
+      if (!upload.cloud.token) throw new Error("Missing cloud upload token.");
+      const { transferCloudVideo } = await import("./cloud-upload-client");
+      await transferCloudVideo(
+        file,
+        upload.id,
+        { ...upload.cloud, token: upload.cloud.token },
+        signal,
+        onProgress,
+      );
+    }
+    if (upload.state !== "ready") {
+      onProgress({
+        uploadId: upload.id,
+        uploadedBytes: file.size,
+        totalBytes: file.size,
+        phase: "processing",
+      });
+      const response = await fetch(`/api/uploads/${upload.id}`, {
+        method: "POST",
+        signal,
+      });
+      const body = await responseBody(response);
+      if (!response.ok)
+        throw new Error(
+          typeof object(body).error === "string"
+            ? String(object(body).error)
+            : "Video processing failed.",
+        );
+      upload = parseUpload(body);
+      const deadline = Date.now() + 5 * 60 * 1000;
+      while (upload.state === "processing" || upload.state === "queued") {
+        if (Date.now() > deadline)
+          throw new Error("Video processing took too long. Retry preparation.");
+        await wait(signal, 1000);
+        upload = await status(upload.id, signal);
+      }
+    }
+    if (upload.state !== "ready" || !upload.media)
+      throw new Error(
+        upload.error || "Video processing failed. Retry preparation.",
+      );
+    return upload.media;
+  }
   onProgress({
     uploadId: upload.id,
     uploadedBytes: upload.offset,
@@ -244,6 +310,12 @@ export async function uploadVideo(
   }
 
   if (upload.state === "uploading") {
+    onProgress({
+      uploadId: upload.id,
+      uploadedBytes: file.size,
+      totalBytes: file.size,
+      phase: "processing",
+    });
     const response = await fetch(`/api/uploads/${upload.id}`, {
       method: "POST",
       signal,

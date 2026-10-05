@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { listSessions } from "@/lib/storage";
 import { writeSessionRequest } from "@/lib/session-service";
 import { appIdentity } from "@/lib/user-scope";
+import { cloudStorageEnabled } from "@/lib/cloud-config";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function GET() {
   try {
     const identity = await appIdentity();
@@ -16,7 +18,12 @@ export async function GET() {
   } catch (error) {
     console.error("Session load failed", error);
     return NextResponse.json(
-      { error: "Sessions could not be loaded. Please retry." },
+      {
+        error:
+          cloudStorageEnabled() && error instanceof Error
+            ? error.message
+            : "Sessions could not be loaded. Please retry.",
+      },
       { status: 503 },
     );
   }

@@ -134,6 +134,8 @@ test("resumable upload API ingests a complete video and reports ready metadata",
   expect([200, 201]).toContain(completed.status());
 
   let status: Record<string, unknown> = await completed.json();
+  // Completion must progress without relying on a later background timer.
+  expect(status.state, String(status.error)).toBe("ready");
   const deadline = Date.now() + 60000;
   while (status.state !== "ready" && status.state !== "failed") {
     if (Date.now() > deadline) throw new Error("Video ingest timed out.");

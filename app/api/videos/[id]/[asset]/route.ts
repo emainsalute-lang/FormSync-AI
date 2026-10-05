@@ -4,9 +4,13 @@ import { database } from "@/lib/database";
 import { ensureObject } from "@/lib/object-store";
 import { validId } from "@/lib/media-service";
 import { appIdentity, canAccessMedia } from "@/lib/user-scope";
+import { cloudStorageEnabled } from "@/lib/cloud-config";
+import { cloudVideoUrl } from "@/lib/cloud-store";
+import { cloudFrame } from "@/lib/cloud-processing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function GET(
   request: Request,
@@ -19,6 +23,22 @@ export async function GET(
     const identity = await appIdentity();
     if (!(await canAccessMedia(identity, id)))
       return new Response("Not found", { status: 404 });
+    if (cloudStorageEnabled()) {
+      if (asset === "thumbnail")
+        return new Response(new Uint8Array(await cloudFrame(id, 0)), {
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "private, max-age=3600",
+          },
+        });
+      return new Response(null, {
+        status: 307,
+        headers: {
+          Location: await cloudVideoUrl(id),
+          "Cache-Control": "private, no-store",
+        },
+      });
+    }
   } catch (error) {
     console.error("Media identity lookup failed", error);
     return new Response("Authentication unavailable", { status: 401 });

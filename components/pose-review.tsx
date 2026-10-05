@@ -667,6 +667,7 @@ export default function PoseReview({
         <video
           ref={video}
           src={`/api/videos/${session.videoId}`}
+          crossOrigin="anonymous"
           controls
           playsInline
           preload="metadata"

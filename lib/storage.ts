@@ -11,10 +11,10 @@ import {
 import type { Session } from "./model";
 import { isOwnerVisible } from "./owner-scope";
 import { randomUUID } from "node:crypto";
-export const DATA_DIR = path.resolve(
-  /* turbopackIgnore: true */ process.env.FORMSYNC_DATA_DIR ||
-    path.join(process.cwd(), "data"),
-);
+import { dataDirectory, assertPersistentStorage } from "./data-directory";
+import { cloudStorageEnabled } from "./cloud-config";
+import { cloudSessions, cloudSession } from "./cloud-store";
+export const DATA_DIR = dataDirectory;
 export const videoPath = (id: string) => path.join(DATA_DIR, "videos", id);
 export function setMediaOwner(id: string, ownerId: string) {
   database()
@@ -30,6 +30,7 @@ export function getMediaOwner(id: string): string | undefined {
   return row?.owner_id;
 }
 export async function initStore() {
+  assertPersistentStorage();
   await Promise.all([
     fs.mkdir(path.join(DATA_DIR, "sessions"), { recursive: true }),
     fs.mkdir(path.join(DATA_DIR, "videos"), { recursive: true }),
@@ -77,6 +78,7 @@ export async function listSessions(
   ownerId?: string,
   allowedOwnerIds?: string[],
 ): Promise<Session[]> {
+  if (cloudStorageEnabled()) return cloudSessions(ownerId, allowedOwnerIds);
   await migrateRecords();
   await migrateVideoIndex();
   const sessions = allDocuments<Session>("sessions");
@@ -176,6 +178,7 @@ export async function getSession(
   ownerId?: string,
   allowedOwnerIds?: string[],
 ): Promise<Session | null> {
+  if (cloudStorageEnabled()) return cloudSession(id, ownerId, allowedOwnerIds);
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   await migrateRecords();
   const session = readDocument<Session>("sessions", id);
@@ -194,6 +197,8 @@ export async function deleteSessionRecord(id: string) {
 export async function withStoreLock<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
+  // Cloud writes enforce revisions atomically in PostgreSQL, not with disk locks.
+  if (cloudStorageEnabled()) return operation();
   await initStore();
   const lock = path.join(DATA_DIR, ".session-lock");
   let acquired = false;

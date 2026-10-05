@@ -1,14 +1,13 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import { dataDirectory, assertPersistentStorage } from "./data-directory";
 
-export const databaseDirectory = path.resolve(
-  /* turbopackIgnore: true */
-  process.env.FORMSYNC_DATA_DIR || path.join(process.cwd(), "data"),
-);
+export const databaseDirectory = dataDirectory;
 let connection: DatabaseSync | undefined;
 export function database() {
   if (connection) return connection;
+  assertPersistentStorage();
   mkdirSync(databaseDirectory, { recursive: true });
   const db = new DatabaseSync(path.join(databaseDirectory, "formsync.sqlite"));
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=15000;
