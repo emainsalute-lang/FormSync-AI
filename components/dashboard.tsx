@@ -37,6 +37,7 @@ import {
   type DraftSnapshot,
 } from "@/lib/drafts";
 import { uploadVideo, type UploadProgress } from "@/lib/upload-client";
+import { normalizeVideoFile } from "@/lib/video-file";
 import VoiceNoteInput from "./voice-note-input";
 const blank = () => ({
   name: "",
@@ -239,7 +240,12 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
   }
   async function cancelUpload() {
     const id = uploadIdRef.current;
-    if (!id || uploadProgressRef.current?.phase !== "uploading") return;
+    if (
+      !id ||
+      (uploadProgressRef.current?.phase !== "uploading" &&
+        uploadStatus !== "Upload paused")
+    )
+      return;
     preparation.current?.abort();
     preparation.current = null;
     setPreparing(false);
@@ -368,29 +374,53 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
     window.addEventListener("online", resume);
     return () => window.removeEventListener("online", resume);
   }, [file, preparing, uploadId, uploadStatus]);
-  function upload(next: File) {
+  async function upload(next: File) {
     if (saving || preparing || !draftReady) return;
-    if (
-      !["video/mp4", "video/webm", "video/quicktime"].includes(next.type) &&
-      !(/\.mov$/i.test(next.name) && !next.type)
-    ) {
-      setError("Please choose an MP4, WebM, or MOV video.");
+    const accepted = normalizeVideoFile(next);
+    if (!accepted) {
+      setError("Please choose an MP4, M4V, WebM, or MOV video.");
       return;
     }
-    if (!next.size || next.size > 100 * 1024 * 1024) {
+    if (!accepted.size || accepted.size > 100 * 1024 * 1024) {
       setError("Choose a non-empty video up to 100 MB.");
       return;
     }
+    const previousUploadId = uploadIdRef.current;
+    const resumeUploadId =
+      previousUploadId &&
+      file?.name === accepted.name &&
+      file.type === accepted.type &&
+      file.size === accepted.size
+        ? previousUploadId
+        : "";
+    if (previousUploadId && !resumeUploadId) {
+      try {
+        const response = await fetch(`/api/uploads/${previousUploadId}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(
+            data.error || "The previous upload could not be canceled.",
+          );
+        }
+        setUploadId("");
+      } catch (e) {
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Cancel the previous upload before choosing another video.",
+        );
+        return;
+      }
+    }
     markDirty();
     releaseObjectUrl();
-    const accepted = next.type
-      ? next
-      : new File([next], next.name, { type: "video/quicktime" });
     objectUrl.current = URL.createObjectURL(accepted);
     setFile(accepted);
     setSrc(objectUrl.current);
     setVideoId("");
-    setUploadId("");
+    if (!resumeUploadId) setUploadId("");
     setUploadProgress(null);
     setVideoName(accepted.name);
     setUploadStatus("Starting upload...");
@@ -399,7 +429,7 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
     setAngle(null);
     setError("");
     setNotice("");
-    void prepare(accepted, "", "");
+    void prepare(accepted, "", resumeUploadId);
     document
       .getElementById("workspace")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -733,7 +763,7 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
             <input
               ref={uploadInput}
               type="file"
-              accept="video/mp4,video/webm,video/quicktime,.mov"
+              accept="video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov"
               className="hidden"
               aria-label="Upload a training video"
               onChange={(e) => {
@@ -807,6 +837,18 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
                       onClick={() => void prepare(file, "", uploadId)}
                     >
                       Resume upload
+                    </button>
+                  )}
+                {!preparing &&
+                  uploadStatus === "Upload paused" &&
+                  uploadId &&
+                  file && (
+                    <button
+                      className="text-link"
+                      type="button"
+                      onClick={() => void cancelUpload()}
+                    >
+                      Cancel upload
                     </button>
                   )}
               </div>
@@ -1124,7 +1166,17 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
           {error && (
             <div className="feedback error-feedback" role="alert">
               {error}
-            </div>
+             {error.includes(
+               "Finish or cancel an existing upload before starting another",
+             ) && (
+               <>
+                 {" "}
+                 <a className="text-link" href="/storage">
+                   Review and cancel active uploads
+                 </a>
+               </>
+             )}
+           </div>
           )}
           {notice && (
             <div className="feedback success-feedback" role="status">

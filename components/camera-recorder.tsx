@@ -129,6 +129,7 @@ export default function CameraRecorder({
       const chunks: Blob[] = [];
       let bytes = 0;
       let seconds = 0;
+      let failed = false;
       recorder.current = r;
       r.ondataavailable = (e) => {
         if (e.data.size) {
@@ -138,16 +139,26 @@ export default function CameraRecorder({
         }
       };
       r.onerror = () => {
+        failed = true;
         setError("Recording failed. Try again.");
-        release();
-        setRecording(false);
       };
       r.onstop = () => {
         release();
+        recorder.current = null;
         if (!mounted.current) return;
         setRecording(false);
         setActive(false);
-        const type = mime.startsWith("video/mp4") ? "video/mp4" : "video/webm";
+        if (failed) return;
+        const recordedMime = r.mimeType || mime;
+        const type = recordedMime.startsWith("video/mp4")
+          ? "video/mp4"
+          : recordedMime.startsWith("video/webm")
+            ? "video/webm"
+            : "";
+        if (!type) {
+          setError("Recording failed. Try again with a supported video format.");
+          return;
+        }
         if (chunks.length && bytes <= 100 * 1024 * 1024 && !blocked.current)
           onRecorded(
             new File(

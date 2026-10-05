@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { transferCloudVideo } from "../lib/cloud-upload-client";
-import type { UploadProgress } from "../lib/upload-client";
+import { uploadVideo, type UploadProgress } from "../lib/upload-client";
 
 const ticket = {
   token: "signed-token",
@@ -112,6 +112,51 @@ test("cloud upload reports the storage rejection instead of hiding it", async ()
         ),
       /413.*maximum allowed size/,
     );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("cloud upload exposes its ID before transfer can fail", async () => {
+  const originalFetch = globalThis.fetch;
+  const id = "11111111-1111-4111-8111-111111111111";
+  const file = new File(["video"], "practice.mp4", { type: "video/mp4" });
+  const progress: UploadProgress[] = [];
+  globalThis.fetch = async (input) => {
+    if (String(input) === "/api/uploads")
+      return Response.json(
+        {
+          id,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          offset: 0,
+          state: "uploading",
+          error: null,
+          cloud: {
+            token: ticket.token,
+            endpoint: ticket.endpoint,
+            bucket: ticket.bucket,
+            object: ticket.object,
+          },
+        },
+        { status: 201 },
+      );
+    return new Response(JSON.stringify({ message: "Storage unavailable" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  try {
+    await assert.rejects(
+      () =>
+        uploadVideo(file, "", new AbortController().signal, (value) =>
+          progress.push(value),
+        ),
+      /Cloud upload could not start/,
+    );
+    assert.equal(progress[0]?.uploadId, id);
+    assert.equal(progress[0]?.phase, "uploading");
   } finally {
     globalThis.fetch = originalFetch;
   }

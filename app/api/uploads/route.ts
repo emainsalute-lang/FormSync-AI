@@ -49,9 +49,30 @@ export async function POST(request: Request) {
         .select("*")
         .single();
       checkCloud(error);
-      return NextResponse.json(await cloudUploadStatus(data as CloudMedia), {
-        status: 201,
-      });
+      try {
+        return NextResponse.json(await cloudUploadStatus(data as CloudMedia), {
+          status: 201,
+        });
+      } catch (error) {
+        try {
+          const cleanup = await client
+            .from("formsync_media")
+            .delete()
+            .eq("id", data.id)
+            .eq("owner_id", identity.userId);
+          if (cleanup.error)
+            console.error("Failed to clean up an unstarted cloud upload", {
+              uploadId: data.id,
+              error: cleanup.error,
+            });
+        } catch (cleanupError) {
+          console.error("Failed to clean up an unstarted cloud upload", {
+            uploadId: data.id,
+            error: cleanupError,
+          });
+        }
+        throw error;
+      }
     }
     if (
       !consumeRateLimit(`upload:${identity.userId}`, 10, 60 * 60 * 1000).allowed

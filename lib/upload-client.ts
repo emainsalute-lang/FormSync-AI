@@ -204,6 +204,12 @@ export async function uploadVideo(
     upload = parseUpload(body);
   }
   assertMatches(upload, file);
+  onProgress({
+    uploadId: upload.id,
+    uploadedBytes: upload.offset,
+    totalBytes: file.size,
+    phase: upload.state === "uploading" ? "uploading" : "processing",
+  });
   if (upload.cloud) {
     if (upload.state === "uploading") {
       if (!upload.cloud.token) throw new Error("Missing cloud upload token.");
@@ -249,13 +255,6 @@ export async function uploadVideo(
       );
     return upload.media;
   }
-  onProgress({
-    uploadId: upload.id,
-    uploadedBytes: upload.offset,
-    totalBytes: file.size,
-    phase: "uploading",
-  });
-
   while (upload.state === "uploading" && upload.offset < file.size) {
     const offset = upload.offset;
     const chunk = file.slice(

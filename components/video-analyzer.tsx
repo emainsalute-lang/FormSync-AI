@@ -584,7 +584,7 @@ export default function VideoAnalyzer({
         ref={input}
         className="hidden"
         type="file"
-        accept="video/mp4,video/webm,video/quicktime,.mov"
+        accept="video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov"
         onChange={(e) => chooseFile(e.target.files?.[0])}
         aria-label="Upload drill video"
         disabled={disabled}

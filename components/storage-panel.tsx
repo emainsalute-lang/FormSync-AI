@@ -336,6 +336,37 @@ export default function StoragePanel() {
                       Cancel upload
                     </button>
                   )}
+                  {u.state === "processing" && (
+                    <button
+                      className="button-ghost"
+                      onClick={async () => {
+                        setBusy(true);
+                        setError("");
+                        try {
+                          const r = await fetch(`/api/uploads/${u.id}`, {
+                            cache: "no-store",
+                          });
+                          const result = await r.json();
+                          if (!r.ok)
+                            throw new Error(
+                              result.error || "Video processing is unavailable.",
+                            );
+                          await load();
+                        } catch (e) {
+                          setError(
+                            e instanceof Error
+                              ? e.message
+                              : "Video processing is unavailable.",
+                          );
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                      disabled={busy}
+                    >
+                      Retry processing
+                    </button>
+                  )}
                 </div>
               ))}
             </section>
