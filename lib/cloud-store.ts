@@ -124,7 +124,8 @@ export async function cloudUploadStatus(row: CloudMedia) {
     media: row.info,
     cloud: {
       token,
-      endpoint: new URL("/storage/v1/upload/resumable", host).toString(),
+      endpoint: new URL("/storage/v1/upload/resumable/sign", host).toString(),
+      apiKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       bucket: VIDEO_BUCKET,
       object: mediaObject(row, "original"),
     },

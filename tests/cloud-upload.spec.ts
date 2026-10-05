@@ -38,7 +38,7 @@ test("cloud video transfers directly to storage and session saves by video ID", 
 }) => {
   const id = "11111111-1111-4111-8111-111111111111";
   const endpoint =
-    "https://project.storage.supabase.co/storage/v1/upload/resumable";
+    "https://project.storage.supabase.co/storage/v1/upload/resumable/sign";
   const media = {
     id,
     name: "cloud.webm",

@@ -1,6 +1,7 @@
 import type { UploadProgress } from "./upload-client";
 type Ticket = {
   token: string;
+  apiKey?: string;
   endpoint: string;
   bucket: string;
   object: string;
@@ -13,7 +14,11 @@ export async function transferCloudVideo(
   progress: (value: UploadProgress) => void,
 ) {
   const key = `formsync-tus:${id}`;
-  const headers = { "Tus-Resumable": "1.0.0", "x-signature": ticket.token };
+  const headers = {
+    "Tus-Resumable": "1.0.0",
+    "x-signature": ticket.token,
+    ...(ticket.apiKey ? { apikey: ticket.apiKey } : {}),
+  };
   let url = "";
   try {
     url = localStorage.getItem(key) || "";
@@ -52,9 +57,24 @@ export async function transferCloudVideo(
       },
       signal,
     });
-    if (!response.ok || !response.headers.get("Location"))
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const body = await response.json();
+        detail =
+          typeof body.message === "string"
+            ? body.message
+            : typeof body.error === "string"
+              ? body.error
+              : "";
+      } catch {}
       throw new Error(
-        "Cloud upload could not start. Check the Supabase bucket and file size limit.",
+        `Cloud upload could not start (${response.status}). ${detail || "Check the Supabase bucket and file size limit."}`,
+      );
+    }
+    if (!response.headers.get("Location"))
+      throw new Error(
+        "Supabase did not return an upload URL. Retry the upload.",
       );
     url = new URL(
       response.headers.get("Location")!,

@@ -12,7 +12,13 @@ type UploadRecord = {
   state: UploadState;
   error: string | null;
   media?: MediaInfo | null;
-  cloud?: { token?: string; endpoint: string; bucket: string; object: string };
+  cloud?: {
+    token?: string;
+    apiKey?: string;
+    endpoint: string;
+    bucket: string;
+    object: string;
+  };
 };
 export type UploadProgress = {
   uploadId: string;
@@ -70,7 +76,8 @@ function parseCloud(value: unknown): NonNullable<UploadRecord["cloud"]> {
     typeof row.endpoint !== "string" ||
     typeof row.bucket !== "string" ||
     typeof row.object !== "string" ||
-    (row.token !== undefined && typeof row.token !== "string")
+    (row.token !== undefined && typeof row.token !== "string") ||
+    (row.apiKey !== undefined && typeof row.apiKey !== "string")
   )
     throw new Error("Invalid cloud upload configuration.");
   return {
@@ -78,6 +85,7 @@ function parseCloud(value: unknown): NonNullable<UploadRecord["cloud"]> {
     bucket: row.bucket,
     object: row.object,
     token: row.token as string | undefined,
+    apiKey: row.apiKey as string | undefined,
   };
 }
 

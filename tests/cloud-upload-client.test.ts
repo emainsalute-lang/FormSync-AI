@@ -5,7 +5,9 @@ import type { UploadProgress } from "../lib/upload-client";
 
 const ticket = {
   token: "signed-token",
-  endpoint: "https://project.storage.supabase.co/storage/v1/upload/resumable",
+  apiKey: "public-project-key",
+  endpoint:
+    "https://project.storage.supabase.co/storage/v1/upload/resumable/sign",
   bucket: "formsync-videos",
   object: "owner/id/original",
 };
@@ -21,7 +23,9 @@ test("direct cloud upload recovers an ambiguous chunk write through HEAD", async
     const method = init?.method || "GET";
     calls.push(`${method} ${input}`);
     assert.equal(new Headers(init?.headers).get("x-signature"), ticket.token);
+    assert.equal(new Headers(init?.headers).get("apikey"), ticket.apiKey);
     if (method === "POST") {
+      assert.equal(String(input), ticket.endpoint);
       assert.equal(new Headers(init?.headers).get("Upload-Length"), "9");
       return new Response(null, {
         status: 201,
@@ -82,6 +86,32 @@ test("cloud transfer refuses a storage redirect to another origin", async () => 
       /Invalid cloud upload URL/,
     );
     assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("cloud upload reports the storage rejection instead of hiding it", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        message: "The object exceeded the maximum allowed size",
+      }),
+      { status: 413, headers: { "Content-Type": "application/json" } },
+    );
+  try {
+    await assert.rejects(
+      () =>
+        transferCloudVideo(
+          new File(["video"], "video.mp4", { type: "video/mp4" }),
+          "rejected-id",
+          ticket,
+          new AbortController().signal,
+          () => {},
+        ),
+      /413.*maximum allowed size/,
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }
