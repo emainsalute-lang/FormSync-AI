@@ -23,8 +23,16 @@ export async function GET(
       return new Response("Not found", { status: 404 });
     const session = await findMedia(id);
     if (!session) return new Response("Not found", { status: 404 });
-    const optimized=new URL(request.url).searchParams.get("optimized")==="1";
-    const file = optimized ? await ensureObject(`optimized/${id}.mp4`) : videoPath(id);
+    let optimized = new URL(request.url).searchParams.get("optimized") === "1";
+    let file = videoPath(id);
+    if (optimized) {
+      try {
+        file = await ensureObject(`optimized/${id}.mp4`);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        optimized = false;
+      }
+    }
     const { size } = await fs.stat(file);
     const headers: Record<string, string> = {
       "Content-Type": optimized ? "video/mp4" : session.type,

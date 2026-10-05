@@ -53,7 +53,16 @@ test("video upload, drawing, saved history and range streaming work end to end",
   });
   await expect(
     page.getByRole("button", { name: "Play video", exact: true }),
-  ).toBeEnabled();
+  ).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator(".video-plane video")).toHaveAttribute(
+    "src",
+    /\/api\/videos\/.*\?optimized=1$/,
+  );
+  expect(
+    await page
+      .locator(".video-plane video")
+      .evaluate((element) => (element as HTMLVideoElement).videoWidth),
+  ).toBeGreaterThan(0);
   await page.getByRole("button", { name: "0.25x", exact: true }).click();
   await page.getByRole("button", { name: "Play video", exact: true }).click();
   await expect(

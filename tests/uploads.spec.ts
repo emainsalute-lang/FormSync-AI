@@ -150,4 +150,37 @@ test("resumable upload API ingests a complete video and reports ready metadata",
     name: "resumable.webm",
     type: "video/webm",
   });
+  const preview = await request.get(
+    `http://127.0.0.1:3001/api/videos/${upload.id}?optimized=1`,
+    { headers: { Range: "bytes=0-31" } },
+  );
+  expect(preview.status()).toBe(206);
+  expect(preview.headers()["content-type"]).toBe("video/mp4");
+  expect((await preview.body()).subarray(4, 8).toString()).toBe("ftyp");
+
+  const saved = await request.post("http://127.0.0.1:3001/api/sessions", {
+    multipart: {
+      session: JSON.stringify({
+        name: "Uploaded video regression",
+        date: "2026-10-05",
+        makes: 0,
+        misses: 0,
+        reps: 0,
+        target: 50,
+        notes: "",
+        tags: ["Shooting"],
+        fps: (status.media as { fps: number }).fps,
+        drawings: [],
+        videoId: upload.id,
+      }),
+    },
+  });
+  expect(saved.status(), await saved.text()).toBe(201);
+  const session = await saved.json();
+  expect(session.videoId).toBe(upload.id);
+  const deleted = await request.delete(
+    `http://127.0.0.1:3001/api/sessions/${session.id}`,
+    { headers: { "If-Match": session.revision || session.createdAt } },
+  );
+  expect(deleted.status()).toBe(204);
 });

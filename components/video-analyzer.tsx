@@ -674,6 +674,16 @@ export default function VideoAnalyzer({
                 preload="metadata"
                 onLoadedMetadata={() => {
                   const el = video.current!;
+                  if (!el.videoWidth || !el.videoHeight) {
+                    setReady(false);
+                    setError(
+                      preparing
+                        ? "Preparing a browser-compatible video preview..."
+                        : "The browser cannot display this video's picture. Retry video preparation.",
+                    );
+                    return;
+                  }
+                  setError("");
                   setDimensions({
                     width: el.videoWidth || 1920,
                     height: el.videoHeight || 1080,

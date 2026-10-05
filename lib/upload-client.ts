@@ -258,9 +258,14 @@ export async function uploadVideo(
     upload = parseUpload(body);
   }
 
+  const processingDeadline = Date.now() + 5 * 60 * 1000;
   while (upload.state !== "ready") {
     if (upload.state === "failed" || upload.state === "cancelled")
       throw new Error(upload.error || "Video processing failed.");
+    if (Date.now() >= processingDeadline)
+      throw new Error(
+        "Video processing is taking too long. Retry preparation to check again.",
+      );
     onProgress({
       uploadId: upload.id,
       uploadedBytes: file.size,

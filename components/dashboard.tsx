@@ -184,6 +184,7 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
         setMedia(data);
         setVideoId(data.id);
         setFps(data.fps);
+        setSrc(`/api/videos/${data.id}?optimized=1`);
         setFile(null);
         setUploadId("");
         setUploadStatus("");
@@ -207,6 +208,8 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
         setVideoId(data.id);
         setVideoName(data.name);
         setFps(data.fps);
+        releaseObjectUrl();
+        setSrc(`/api/videos/${data.id}?optimized=1`);
         setFile(null);
         setUploadId("");
         setUploadProgress(null);

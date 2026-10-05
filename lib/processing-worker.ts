@@ -98,6 +98,12 @@ async function optimize(id: string) {
 }
 async function optimizeIfPresent(id: string) {
   if (
+    database()
+      .prepare("SELECT key FROM objects WHERE key=?")
+      .get(`optimized/${id}.mp4`)
+  )
+    return;
+  if (
     !database()
       .prepare("SELECT key FROM objects WHERE key=?")
       .get("videos/" + id)
@@ -119,6 +125,8 @@ async function ingest(id: string) {
   await fs.writeFile(videoPath(id), bytes);
   setMediaOwner(id, upload.owner_id);
   await probeMedia(id, upload.name, upload.type);
+  // Ready means the browser-compatible video is available as well as metadata.
+  await optimizeIfPresent(id);
   database()
     .prepare("UPDATE uploads SET state='ready',error=NULL WHERE id=?")
     .run(id);
