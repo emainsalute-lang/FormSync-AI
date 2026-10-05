@@ -19,16 +19,14 @@ test("failed cloud preparation cannot submit a raw video to session saving", asy
     page.getByRole("button", { name: "Upload video", exact: true }),
   ).toBeEnabled();
   await page.getByLabel("Drill name", { exact: true }).fill("Failed upload");
-  await page
-    .getByLabel("Upload a training video")
-    .setInputFiles({
-      name: "failed.webm",
-      mimeType: "video/webm",
-      buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
-    });
+  await page.getByLabel("Upload a training video").setInputFiles({
+    name: "failed.webm",
+    mimeType: "video/webm",
+    buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+  });
   await expect(
-    page.getByText("Supabase storage is not configured.", { exact: true }),
-  ).toBeVisible();
+    page.getByRole("region", { name: "Video analyzer" }).getByRole("alert"),
+  ).toContainText("Supabase storage is not configured.");
   await expect(
     page.getByRole("button", { name: "Save session", exact: true }),
   ).toBeDisabled();
@@ -151,7 +149,10 @@ test("cloud video transfers directly to storage and session saves by video ID", 
       },
     }),
   );
-  await page.route(`**/api/videos/${id}?optimized=1`, async (route) =>
+  await page.route(`**/api/videos/${id}/metadata`, async (route) =>
+    route.fulfill({ json: media }),
+  );
+  await page.route(`**/api/videos/${id}?optimized=1**`, async (route) =>
     route.fulfill({ body: bytes, contentType: "video/webm" }),
   );
   await page.goto("http://127.0.0.1:3001");
@@ -192,6 +193,20 @@ test("cloud video transfers directly to storage and session saves by video ID", 
     page.getByRole("button", { name: "Play video", exact: true }),
   ).toBeEnabled({ timeout: 30000 });
   expect(offset).toBe(bytes.length);
+  const previousSource = await page
+    .locator(".video-plane video")
+    .getAttribute("src");
+  await page.locator(".video-plane video").dispatchEvent("error");
+  await page
+    .getByRole("button", { name: "Retry video preparation", exact: true })
+    .click();
+  await expect(page.locator(".video-plane video")).not.toHaveAttribute(
+    "src",
+    previousSource!,
+  );
+  await expect(
+    page.getByRole("button", { name: "Play video", exact: true }),
+  ).toBeEnabled();
   await page.getByLabel("Drill name", { exact: true }).fill("Cloud practice");
   await page.getByRole("button", { name: "Save session", exact: true }).click();
   await expect(page.locator(".success-feedback")).toContainText(

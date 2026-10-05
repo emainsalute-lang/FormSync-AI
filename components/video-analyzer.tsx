@@ -38,6 +38,7 @@ type Props = {
   fps: number;
   media: MediaInfo | null;
   preparing: boolean;
+  preparationError?: string;
   disabled: boolean;
   edits: ClipEdits;
   onEdits: (edits: ClipEdits) => void;
@@ -54,6 +55,7 @@ export default function VideoAnalyzer({
   fps,
   media,
   preparing,
+  preparationError = "",
   disabled,
   edits,
   onEdits,
@@ -554,11 +556,12 @@ export default function VideoAnalyzer({
     if (input.current) input.current.value = "";
   };
   const previewError =
-    error === "Preparing a browser-compatible video preview..."
+    preparationError ||
+    (error === "Preparing a browser-compatible video preview..."
       ? preparing
         ? error
         : "Video preview is unavailable. Retry video preparation."
-      : error;
+      : error);
   return (
     <section
       className="panel analyzer"

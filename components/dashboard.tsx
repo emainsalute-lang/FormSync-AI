@@ -184,7 +184,7 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
         setMedia(data);
         setVideoId(data.id);
         setFps(data.fps);
-        setSrc(`/api/videos/${data.id}?optimized=1`);
+        setSrc(`/api/videos/${data.id}?optimized=1&preview=${Date.now()}`);
         setFile(null);
         setUploadId("");
         setUploadStatus("");
@@ -857,6 +857,14 @@ export default function Dashboard({ ownerId = "local" }: { ownerId?: string }) {
               fps={fps}
               media={media}
               preparing={preparing}
+              preparationError={
+                !preparing &&
+                ["Upload paused", "Video preparation failed"].includes(
+                  uploadStatus,
+                )
+                  ? error
+                  : ""
+              }
               disabled={saving || preparing || !draftReady}
               edits={edits}
               onEdits={setEdits}
