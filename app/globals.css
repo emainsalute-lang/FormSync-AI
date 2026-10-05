@@ -2741,3 +2741,561 @@ td .open-session {
 .panel {
   box-shadow: 0 2px 12px #23452b08;
 }
+.marketing-page {
+  background: #fafbf7;
+  color: #172b21;
+}
+.marketing-nav,
+.marketing-hero,
+.marketing-features,
+.marketing-detail,
+.marketing-footer {
+  max-width: 1180px;
+  margin: auto;
+  padding: 28px 36px;
+}
+.marketing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.marketing-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -1px;
+}
+.marketing-brand img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.marketing-brand span {
+  color: #25753c;
+}
+.marketing-nav nav,
+.marketing-nav > div {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+.marketing-nav nav {
+  font-size: 14px;
+  color: #53665c;
+}
+.marketing-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #25753c;
+  color: white;
+  padding: 14px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.marketing-button:hover {
+  background: #1c5b2d;
+}
+.marketing-login {
+  font-size: 14px;
+  font-weight: 600;
+}
+.marketing-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  padding-top: 74px;
+  padding-bottom: 80px;
+}
+.marketing-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #25753c;
+  margin-bottom: 24px;
+}
+.marketing-hero h1 {
+  font-size: clamp(42px, 5.5vw, 72px);
+  line-height: 1.06;
+  letter-spacing: -3px;
+  font-weight: 750;
+  margin: 0 0 26px;
+}
+.marketing-hero h1 em {
+  font-style: normal;
+  color: #25753c;
+}
+.marketing-lead {
+  font-size: 18px;
+  line-height: 1.8;
+  color: #53665c;
+  max-width: 460px;
+}
+.marketing-actions {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+.marketing-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.marketing-small {
+  font-size: 12px;
+  color: #6c7e71;
+  margin-top: 20px;
+}
+.marketing-preview {
+  background: white;
+  border: 1px solid #dee5d9;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 24px 65px #18301a12;
+  transform: rotate(-2deg);
+}
+.marketing-preview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: 1px;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.marketing-live {
+  background: #eff5e9;
+  padding: 6px 9px;
+  border-radius: 20px;
+  color: #25753c;
+  letter-spacing: 0;
+}
+.marketing-court {
+  background: radial-gradient(ellipse at top, #446743, #1c3326);
+  border-radius: 9px;
+  position: relative;
+  overflow: hidden;
+}
+.marketing-court svg {
+  display: block;
+  width: 100%;
+}
+.marketing-video-label {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: white;
+  background: #14291dcc;
+  padding: 7px 9px;
+  border-radius: 5px;
+  font-size: 10px;
+}
+.marketing-timeline {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 0;
+  color: #53665c;
+}
+.marketing-timeline > span {
+  flex: 1;
+  height: 4px;
+  background: linear-gradient(to right, #25753c 35%, #e0e7db 35%);
+  border-radius: 4px;
+}
+.marketing-timeline small {
+  font-size: 10px;
+}
+.marketing-example {
+  font-size: 9px;
+  color: #6c7e71;
+  text-align: right;
+}
+.marketing-chart {
+  padding: 18px 0 0;
+}
+.marketing-chart-title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #53665c;
+  margin-bottom: 9px;
+}
+.marketing-chart-title span:last-child {
+  font-size: 9px;
+  color: #748170;
+}
+.marketing-chart > strong {
+  font-size: 14px;
+}
+.marketing-chart svg {
+  width: 100%;
+  display: block;
+  margin-top: 10px;
+}
+.marketing-chart-weeks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #748170;
+}
+.marketing-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  border-top: 1px solid #e0e7dc;
+  border-bottom: 1px solid #e0e7dc;
+  padding-top: 42px;
+  padding-bottom: 42px;
+}
+.marketing-features article > svg {
+  color: #25753c;
+}
+.marketing-features h2 {
+  font-size: 19px;
+  margin: 18px 0 10px;
+  letter-spacing: -0.5px;
+}
+.marketing-features p,
+.marketing-detail p {
+  color: #53665c;
+  line-height: 1.8;
+  font-size: 15px;
+}
+.marketing-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 110px;
+  align-items: center;
+  padding-top: 90px;
+  padding-bottom: 90px;
+}
+.marketing-detail h2,
+.marketing-cta h2 {
+  font-size: 42px;
+  line-height: 1.15;
+  letter-spacing: -1.5px;
+  margin: 0 0 20px;
+}
+.marketing-phone {
+  max-width: 340px;
+  margin: auto;
+  border: 7px solid #213428;
+  border-radius: 34px;
+  padding: 28px 20px;
+  background: white;
+  box-shadow: 18px 20px 0 #e7eddf;
+}
+.marketing-phone-head {
+  font-size: 11px;
+  font-weight: 700;
+}
+.marketing-phone-head span {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #748170;
+  margin-top: 7px;
+}
+.marketing-phone h3 {
+  font-size: 23px;
+  margin: 18px 0;
+}
+.marketing-reps {
+  display: flex;
+  gap: 36px;
+  background: #eff5e9;
+  border-radius: 8px;
+  padding: 15px;
+}
+.marketing-reps strong {
+  font-size: 30px;
+  color: #25753c;
+}
+.marketing-reps span {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: #53665c;
+}
+.marketing-note {
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid #e2e8df;
+  padding-top: 17px;
+  margin-top: 20px;
+  font-size: 11px;
+}
+.marketing-note small {
+  display: block;
+  color: #748170;
+  margin-top: 5px;
+}
+.marketing-steps {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+}
+.marketing-steps li {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin: 22px 0;
+  font-size: 13px;
+  color: #53665c;
+}
+.marketing-steps b {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d4decb;
+  border-radius: 50%;
+  color: #25753c;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.marketing-steps strong {
+  display: block;
+  color: #172b21;
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+.marketing-cta {
+  text-align: center;
+  background: #eaf0e1;
+  padding: 65px 24px;
+}
+.marketing-cta p {
+  color: #53665c;
+}
+.marketing-cta .marketing-kicker {
+  color: #25753c;
+}
+.marketing-cta .marketing-button {
+  margin-top: 15px;
+}
+.marketing-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #53665c;
+}
+.marketing-footer > a:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.auth-redesign {
+  min-height: 100svh;
+  background: #fafbf7;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.auth-story {
+  background: #eaf0e1;
+  padding: 60px max(30px, 8vw);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 30px;
+}
+.auth-story h2 {
+  font-size: 48px;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin: 0;
+}
+.auth-story > p {
+  color: #53665c;
+  line-height: 1.8;
+}
+.auth-story .marketing-chart {
+  background: #fafbf7;
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 400px;
+}
+.auth-form-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 55px max(28px, 6vw);
+  max-width: 650px;
+  width: 100%;
+  margin: auto;
+}
+.auth-home-link {
+  font-size: 13px;
+  color: #53665c;
+  margin-bottom: 44px;
+}
+.auth-form-wrap h1 {
+  font-size: 36px;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+.auth-form-wrap > .muted {
+  margin-bottom: 25px;
+}
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  background: #eaf0e1;
+  padding: 5px;
+  border-radius: 9px;
+  margin-bottom: 26px;
+}
+.auth-tabs button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 10px;
+  border-radius: 6px;
+  color: #53665c;
+  font-size: 14px;
+}
+.auth-tabs button[aria-pressed="true"] {
+  background: white;
+  color: #172b21;
+  box-shadow: 0 2px 6px #172b2110;
+  font-weight: 600;
+}
+.auth-form-wrap fieldset {
+  border: 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+.auth-form-wrap input {
+  width: 100%;
+  border: 1px solid #d5e1d9;
+  background: white;
+  border-radius: 8px;
+  padding: 13px;
+  margin-top: 7px;
+}
+.auth-form-wrap .button-primary {
+  width: 100%;
+  border-radius: 8px;
+  padding: 14px;
+}
+.auth-form-wrap > .text-link {
+  margin-top: 22px;
+  font-size: 13px;
+}
+.auth-coach-note {
+  font-size: 12px;
+  color: #6c7e71;
+  margin-top: 28px;
+}
+.auth-password-hint {
+  font-size: 11px;
+  color: #6c7e71;
+  margin: 0;
+}
+.auth-form-wrap .field-label {
+  display: block;
+  font-size: 13px;
+}
+@media (max-width: 800px) {
+  .marketing-nav,
+  .marketing-hero,
+  .marketing-features,
+  .marketing-detail,
+  .marketing-footer {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+  .marketing-nav nav {
+    display: none;
+  }
+  .marketing-nav {
+    gap: 12px;
+  }
+  .marketing-nav > div {
+    gap: 14px;
+  }
+  .marketing-nav .marketing-button {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .marketing-brand {
+    font-size: 19px;
+  }
+  .marketing-brand img {
+    width: 26px;
+    height: 26px;
+  }
+  .marketing-hero {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-top: 40px;
+  }
+  .marketing-hero h1 {
+    letter-spacing: -2px;
+  }
+  .marketing-preview {
+    max-width: 500px;
+    width: 100%;
+    margin: auto;
+    transform: none;
+  }
+  .marketing-features {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  .marketing-detail {
+    grid-template-columns: 1fr;
+    gap: 55px;
+    padding-top: 60px;
+    padding-bottom: 60px;
+  }
+  .marketing-detail > div:last-child {
+    grid-row: 1;
+  }
+  .marketing-detail h2,
+  .marketing-cta h2 {
+    font-size: 34px;
+  }
+  .marketing-footer {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .marketing-footer > span {
+    width: 100%;
+    order: 3;
+  }
+  .auth-redesign {
+    grid-template-columns: 1fr;
+  }
+  .auth-story {
+    display: none;
+  }
+  .auth-form-wrap {
+    padding: 35px 25px;
+  }
+  .auth-home-link {
+    margin-bottom: 35px;
+  }
+  .auth-form-wrap h1 {
+    font-size: 32px;
+  }
+}
+
+.marketing-video-label svg { width: 15px; height: 15px; flex-shrink: 0; }

@@ -28,6 +28,8 @@ export async function proxy(request: NextRequest) {
   if (error) console.error("Supabase session verification failed", error);
   const pathname = request.nextUrl.pathname;
   const publicRoute =
+    pathname === "/" ||
+    pathname === "/welcome" ||
     pathname === "/auth" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/share/") ||
@@ -57,7 +59,7 @@ export async function proxy(request: NextRequest) {
     const invite = request.nextUrl.searchParams.get("invite");
     const fallback = invite
       ? `/training?invite=${encodeURIComponent(invite)}`
-      : "/training";
+      : "/";
     let safeDestination = fallback;
     try {
       const candidate = new URL(next || fallback, request.url);

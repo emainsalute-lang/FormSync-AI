@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ProgressPreview } from "@/components/landing-page";
 import { FormEvent, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -24,6 +26,8 @@ export default function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("mode") === "signup")
+      setMode("signup");
     if (new URLSearchParams(window.location.search).get("error"))
       setError(
         "Email verification failed. Please request a new verification email.",
@@ -48,14 +52,12 @@ export default function AuthPage() {
         window.location.assign(
           safeNext(
             params.get("next"),
-            invite
-              ? `/training?invite=${encodeURIComponent(invite)}`
-              : "/training",
+            invite ? `/training?invite=${encodeURIComponent(invite)}` : "/",
           ),
         );
         return;
       }
-      const next = safeNext(params.get("next"), "/training");
+      const next = safeNext(params.get("next"), "/");
       const callback = new URL("/auth/callback", window.location.origin);
       callback.searchParams.set("next", next);
       const invite = params.get("invite");
@@ -82,16 +84,61 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="auth-shell">
-      <section className="panel auth-panel">
+    <main className="auth-redesign">
+      <aside className="auth-story">
+        <Link href="/" className="marketing-brand">
+          FormSync<span>AI</span>
+        </Link>
+        <h2>
+          Every rep.
+          <br />A little better.
+        </h2>
+        <p>
+          Review your form, keep your training in one place, and turn what you
+          notice into your next step forward.
+        </p>
+        <ProgressPreview />
+        <p>Your own space to practice with intention.</p>
+      </aside>
+      <section className="auth-form-wrap">
+        <Link href="/" className="auth-home-link">
+          Back to FormSyncAI
+        </Link>
         <p className="eyebrow">FORMSYNC AI</p>
         <h1>
-          {mode === "signin" ? "Welcome back" : "Create your athlete account"}
+          {mode === "signin" ? "Welcome back" : "Start your training journey"}
         </h1>
         <p className="muted">
-          Sign in to your private training workspace. Coach accounts are created
-          by accepting an athlete&apos;s invitation.
+          {mode === "signin"
+            ? "Your practice, your progress. Pick up where you left off."
+            : "Create your account and make every session count."}
         </p>
+        <div className="auth-tabs" aria-label="Account options">
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={mode === "signin"}
+            onClick={() => {
+              setMode("signin");
+              setError("");
+              setMessage("");
+            }}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={mode === "signup"}
+            onClick={() => {
+              setMode("signup");
+              setError("");
+              setMessage("");
+            }}
+          >
+            Create account
+          </button>
+        </div>
         <form className="hub-form" onSubmit={(event) => void submit(event)}>
           <fieldset disabled={busy}>
             {mode === "signup" && (
@@ -121,7 +168,7 @@ export default function AuthPage() {
               <input
                 type="password"
                 required
-                minLength={8}
+                minLength={mode === "signup" ? 8 : undefined}
                 autoComplete={
                   mode === "signin" ? "current-password" : "new-password"
                 }
@@ -129,6 +176,11 @@ export default function AuthPage() {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
+            {mode === "signup" && (
+              <p className="auth-password-hint">
+                Use at least 8 characters for your password.
+              </p>
+            )}
             <button className="button-primary">
               {busy
                 ? "Please wait…"
@@ -151,6 +203,7 @@ export default function AuthPage() {
         <button
           type="button"
           className="text-link"
+          disabled={busy}
           onClick={() =>
             setMode((current) => (current === "signin" ? "signup" : "signin"))
           }
@@ -159,6 +212,9 @@ export default function AuthPage() {
             ? "New here? Create an athlete account"
             : "Already have an account? Sign in"}
         </button>
+        <p className="auth-coach-note">
+          Coaches join through an athlete invitation.
+        </p>
       </section>
     </main>
   );
