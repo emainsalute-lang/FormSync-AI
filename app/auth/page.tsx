@@ -62,7 +62,7 @@ export default function AuthPage() {
       callback.searchParams.set("next", next);
       const invite = params.get("invite");
       if (invite) callback.searchParams.set("invite", invite);
-      const { error: authError } = await supabase.auth.signUp({
+      const { data, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -71,8 +71,18 @@ export default function AuthPage() {
         },
       });
       if (authError) throw authError;
+      if (data.session) {
+        const invite = params.get("invite");
+        window.location.assign(
+          safeNext(
+            params.get("next"),
+            invite ? `/training?invite=${encodeURIComponent(invite)}` : "/",
+          ),
+        );
+        return;
+      }
       setMessage(
-        "Check your email to verify your account, then return here to sign in.",
+        "Account created. Check your email to confirm your address, then return here to sign in.",
       );
     } catch (cause) {
       setError(

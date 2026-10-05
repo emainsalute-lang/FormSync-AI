@@ -5,9 +5,9 @@ The two public Supabase variables connect authentication. The database tables an
 1. Open your Supabase project → SQL Editor → New query.
 2. Paste and run `supabase/migrations/001_phase8_collaboration.sql` first. Skip this step if you already installed that migration; its existing policy definitions should not be recreated.
 3. In another query, paste and run `supabase/migrations/002_cloud_storage.sql`.
-4. Under Authentication → URL Configuration, set Site URL to `https://formsyncai.vercel.app` and allow `https://formsyncai.vercel.app/auth/callback` as a redirect URL. Add localhost redirects only if developing locally.
+4. Under Authentication → URL Configuration, set Site URL to `https://formsyncai.vercel.app` and allow `https://formsyncai.vercel.app/auth/callback` as a redirect URL. Add localhost redirects only if developing locally. Under Authentication → Providers → Email, turn off **Confirm email** if new accounts should be able to sign in immediately. With confirmation enabled, users must verify their email before signing in; with it disabled, the app signs them in as soon as signup succeeds. Disabling confirmation means email addresses are not verified.
 5. In Vercel → Settings → Environment Variables, keep `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and add `FORMSYNC_STORAGE_BACKEND=supabase` to Production and Preview. No Firebase variables or server secret keys are required for this backend: authenticated requests use row-level security.
-6. Push the code changes and redeploy. Use Node.js 24. Sign up/sign in at `/auth`; if email confirmation is enabled, confirm your email first.
+6. Push the code changes and redeploy. Use Node.js 24. Sign up/sign in at `/auth`; behavior follows the Email provider's **Confirm email** setting.
 7. Upload a short video, wait for processing, enter a drill name, save, reload, and play the saved session. Verify a second account cannot see the first account's sessions or videos.
 
 The SQL creates a private `formsync-videos` bucket. Check Storage → Settings for the project's global file limit; bucket settings cannot override the project's plan limit. The app accepts up to 100 MB, but your Supabase plan may permit less. Keep test clips below the configured limit.
